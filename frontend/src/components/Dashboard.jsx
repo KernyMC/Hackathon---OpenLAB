@@ -6,17 +6,23 @@ function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Cargar datos actualizados del perfil
-    loadProfile()
-  }, [])
+    // Usar los datos del usuario que ya tenemos
+    console.log('Dashboard - Datos del usuario:', user)
+    if (user) {
+      setProfile(user)
+    }
+  }, [user])
 
   const loadProfile = async () => {
     try {
       setLoading(true)
+      // Intentar cargar desde la API, pero usar datos locales si falla
       const response = await api.get('/users/profile')
       setProfile(response.data)
     } catch (error) {
       console.error('Error cargando perfil:', error)
+      // Si falla la API, usar los datos que ya tenemos
+      setProfile(user)
     } finally {
       setLoading(false)
     }
@@ -66,21 +72,21 @@ function Dashboard({ user, onLogout }) {
               </div>
             ) : (
               <div className="space-y-2">
-                <p><span className="font-medium">Nombre:</span> {profile?.name}</p>
-                <p><span className="font-medium">Email:</span> {profile?.email}</p>
+                <p><span className="font-medium">Nombre:</span> {profile?.name || 'No disponible'}</p>
+                <p><span className="font-medium">Email:</span> {profile?.email || 'No disponible'}</p>
                 <p><span className="font-medium">Rol:</span> 
                   <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
                     profile?.role === 'admin' 
                       ? 'bg-red-100 text-red-800' 
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {profile?.role}
+                    {profile?.role || 'user'}
                   </span>
                 </p>
                 <p><span className="font-medium">Miembro desde:</span> {
                   profile?.created_at 
                     ? new Date(profile.created_at).toLocaleDateString()
-                    : 'N/A'
+                    : 'Hoy'
                 }</p>
               </div>
             )}

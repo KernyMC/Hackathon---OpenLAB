@@ -32,6 +32,7 @@ function Login({ onLogin }) {
         result = await authService.register(formData.name, formData.email, formData.password)
       }
       
+      console.log('Login - Datos recibidos:', result)
       onLogin(result.user)
     } catch (error) {
       setError(error.message)

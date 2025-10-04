@@ -11,14 +11,22 @@ const router = express.Router();
 // Registro de usuario
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { nombres, apellidos, email, password, cedula, idTipoUsuario } = req.body;
 
-    // Validar entrada
-    const validation = InputValidator.validateUserInput({ name, email, password });
-    if (!validation.isValid) {
+    // Validar entrada básica
+    if (!nombres || !apellidos || !email || !password || !cedula || !idTipoUsuario) {
       return res.status(400).json({
-        message: 'Datos inválidos',
-        errors: validation.errors
+        message: 'Todos los campos son requeridos',
+        errors: ['nombres', 'apellidos', 'email', 'password', 'cedula', 'idTipoUsuario']
+      });
+    }
+
+    // Validar email
+    const emailValidation = InputValidator.validateEmail(email);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        message: 'Email inválido',
+        errors: [emailValidation.error]
       });
     }
 
@@ -32,8 +40,8 @@ router.post('/register', async (req, res) => {
     }
 
     // Verificar si el usuario ya existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validation.data.email }
+    const existingUser = await prisma.usuario.findUnique({
+      where: { email: emailValidation.value }
     });
 
     if (existingUser) {
@@ -42,23 +50,55 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Verificar si la cédula ya existe
+    const existingCedula = await prisma.usuario.findFirst({
+      where: { cedula }
+    });
+
+    if (existingCedula) {
+      return res.status(400).json({
+        message: 'Ya existe un usuario con esta cédula'
+      });
+    }
+
+    // Verificar que el tipo de usuario existe
+    const tipoUsuario = await prisma.tipoUsuario.findUnique({
+      where: { id: parseInt(idTipoUsuario) }
+    });
+
+    if (!tipoUsuario) {
+      return res.status(400).json({
+        message: 'Tipo de usuario no válido'
+      });
+    }
+
     // Hash de la contraseña
     const hashedPassword = await PasswordValidator.hash(password);
 
     // Crear usuario
-    const user = await prisma.user.create({
+    const user = await prisma.usuario.create({
       data: {
-        name: validation.data.name,
-        email: validation.data.email,
+        nombres,
+        apellidos,
+        email: emailValidation.value,
         password: hashedPassword,
-        role: 'user'
+        cedula,
+        idTipoUsuario: parseInt(idTipoUsuario)
       },
       select: {
         id: true,
-        name: true,
+        nombres: true,
+        apellidos: true,
         email: true,
-        role: true,
-        createdAt: true
+        cedula: true,
+        idTipoUsuario: true,
+        createdAt: true,
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
       }
     });
 
@@ -97,8 +137,16 @@ router.post('/login', async (req, res) => {
     }
 
     // Buscar usuario
-    const user = await prisma.user.findUnique({
-      where: { email: emailValidation.value }
+    const user = await prisma.usuario.findUnique({
+      where: { email: emailValidation.value },
+      include: {
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -116,7 +164,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Actualizar último login
-    await prisma.user.update({
+    await prisma.usuario.update({
       where: { id: user.id },
       data: { lastLogin: new Date() }
     });
@@ -169,15 +217,23 @@ router.get('/verify', async (req, res) => {
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
     // Buscar usuario
-    const user = await prisma.user.findUnique({
+    const user = await prisma.usuario.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
-        name: true,
+        nombres: true,
+        apellidos: true,
         email: true,
-        role: true,
+        cedula: true,
+        idTipoUsuario: true,
         createdAt: true,
-        lastLogin: true
+        lastLogin: true,
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
       }
     });
 

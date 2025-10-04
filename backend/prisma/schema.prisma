@@ -10,19 +10,162 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  password   String
-  name       String
-  role       String   @default("user")
-  createdAt  DateTime @default(now()) @map("created_at")
-  lastLogin  DateTime? @map("last_login")
+model TipoUsuario {
+  id          Int      @id @default(autoincrement())
+  descripcion String   @db.VarChar(100)
   
   // Relaciones
-  sessions   Session[]
+  usuarios    Usuario[]
   
-  @@map("users")
+  @@map("TipoUsuario")
+}
+
+model Usuario {
+  id            Int         @id @default(autoincrement())
+  nombres       String      @db.VarChar(100)
+  apellidos     String      @db.VarChar(100)
+  email         String      @unique @db.VarChar(150)
+  password      String      @db.VarChar(255)
+  cedula        String      @db.VarChar(150)
+  idTipoUsuario Int         @map("id_tipo_usuario")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  lastLogin     DateTime?   @map("last_login")
+  
+  // Relaciones
+  tipoUsuario   TipoUsuario @relation(fields: [idTipoUsuario], references: [id])
+  usuarioOngs   UsuarioOng[]
+  sessions      Session[]
+  
+  @@map("Usuario")
+}
+
+model ONG {
+  id          Int         @id @default(autoincrement())
+  nombre      String      @db.VarChar(150)
+  descripcion String?
+  
+  // Relaciones
+  usuarioOngs UsuarioOng[]
+  proyectos   Proyecto[]
+  
+  @@map("ONG")
+}
+
+model UsuarioOng {
+  id       Int @id @default(autoincrement())
+  idUsuario Int @map("id_usuario")
+  idOng    Int @map("id_ong")
+  
+  // Relaciones
+  usuario  Usuario @relation(fields: [idUsuario], references: [id])
+  ong      ONG     @relation(fields: [idOng], references: [id])
+  
+  @@map("usuario_ong")
+}
+
+model Proyecto {
+  id          Int    @id @default(autoincrement())
+  nombre      String @db.VarChar(150)
+  descripcion String?
+  idOng       Int    @map("id_ong")
+  
+  // Relaciones
+  ong         ONG    @relation(fields: [idOng], references: [id])
+  ejes        Eje[]
+  ejesObservables EjeObservable[]
+  items       Item[]
+  itemsObservables ItemObservable[]
+  
+  @@map("Proyecto")
+}
+
+model Eje {
+  id         Int    @id @default(autoincrement())
+  nombre     String @db.VarChar(150)
+  idProyecto Int    @map("id_proyecto")
+  
+  // Relaciones
+  proyecto   Proyecto @relation(fields: [idProyecto], references: [id])
+  kpis       KPI[]
+  
+  @@map("Eje")
+}
+
+model KPI {
+  id     Int    @id @default(autoincrement())
+  nombre String @db.VarChar(150)
+  idEje  Int    @map("id_eje")
+  
+  // Relaciones
+  eje    Eje    @relation(fields: [idEje], references: [id])
+  items  Item[]
+  
+  @@map("KPI")
+}
+
+model Item {
+  id                Int            @id @default(autoincrement())
+  idKpi             Int            @map("id_kpi")
+  idProyecto        Int            @map("id_proyecto")
+  descripcion       String?
+  idTipoDatoItem    Int            @map("id_tipo_dato_item")
+  
+  // Relaciones
+  kpi               KPI            @relation(fields: [idKpi], references: [id])
+  proyecto          Proyecto       @relation(fields: [idProyecto], references: [id])
+  tipoDatoItem      TipoDatoItem   @relation(fields: [idTipoDatoItem], references: [id])
+  
+  @@map("Item")
+}
+
+model EjeObservable {
+  id         Int    @id @default(autoincrement())
+  nombre     String @db.VarChar(150)
+  idProyecto Int    @map("id_proyecto")
+  
+  // Relaciones
+  proyecto   Proyecto @relation(fields: [idProyecto], references: [id])
+  kpisObservables KPIObservable[]
+  
+  @@map("Eje_Observable")
+}
+
+model KPIObservable {
+  id     Int    @id @default(autoincrement())
+  nombre String @db.VarChar(150)
+  idEje  Int    @map("id_eje")
+  
+  // Relaciones
+  eje    EjeObservable @relation(fields: [idEje], references: [id])
+  itemsObservables ItemObservable[]
+  
+  @@map("KPI_Observable")
+}
+
+model ItemObservable {
+  id                Int            @id @default(autoincrement())
+  idKpi             Int            @map("id_kpi")
+  idProyecto        Int            @map("id_proyecto")
+  descripcion       String?
+  idTipoDatoItem    Int            @map("id_tipo_dato_item")
+  
+  // Relaciones
+  kpi               KPIObservable  @relation(fields: [idKpi], references: [id])
+  proyecto          Proyecto       @relation(fields: [idProyecto], references: [id])
+  tipoDatoItem      TipoDatoItem   @relation(fields: [idTipoDatoItem], references: [id])
+  
+  @@map("Item_Observable")
+}
+
+model TipoDatoItem {
+  id          Int    @id @default(autoincrement())
+  descripcion String? @db.VarChar(150)
+  
+  // Relaciones
+  items       Item[]
+  itemsObservables ItemObservable[]
+  
+  @@map("tipo_dato_item")
 }
 
 model Session {
@@ -33,7 +176,7 @@ model Session {
   createdAt DateTime @default(now()) @map("created_at")
   
   // Relaciones
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("sessions")
 }

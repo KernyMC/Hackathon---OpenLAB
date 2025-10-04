@@ -26,13 +26,19 @@ app.use(strictLimiter);         // Rate limiting general
 // Rutas básicas
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Hackathon API - Sistema Operativo',
+    message: 'Hackathon API - Sistema de Gestión de Proyectos',
     status: 'success',
-    version: '1.0.0',
+    version: '2.0.0',
     timestamp: new Date().toISOString(),
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
+      ongs: '/api/ongs',
+      proyectos: '/api/proyectos',
+      ejes: '/api/ejes',
+      kpis: '/api/kpis',
+      items: '/api/items',
+      tiposDatos: '/api/tipos-datos',
       health: '/api/health'
     }
   });
@@ -54,6 +60,24 @@ app.use('/api/auth', authLimiter, validateInput, require('./routes/auth'));
 // Rutas de usuarios con validación JWT
 app.use('/api/users', validateJWT, require('./routes/users'));
 
+// Rutas de ONGs con validación JWT
+app.use('/api/ongs', validateJWT, require('./routes/ong'));
+
+// Rutas de proyectos con validación JWT
+app.use('/api/proyectos', validateJWT, require('./routes/proyecto'));
+
+// Rutas de ejes con validación JWT
+app.use('/api/ejes', validateJWT, require('./routes/eje'));
+
+// Rutas de KPIs con validación JWT
+app.use('/api/kpis', validateJWT, require('./routes/kpi'));
+
+// Rutas de items con validación JWT
+app.use('/api/items', validateJWT, require('./routes/item'));
+
+// Rutas de tipos de datos con validación JWT
+app.use('/api/tipos-datos', validateJWT, require('./routes/tipo-dato-item'));
+
 // Middleware de error
 app.use((err, req, res, next) => {
   console.error('Error del servidor:', err.stack);
@@ -69,7 +93,17 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     message: 'Endpoint no disponible',
     path: req.originalUrl,
-    availableEndpoints: ['/api/auth', '/api/users', '/api/health'],
+    availableEndpoints: [
+      '/api/auth', 
+      '/api/users', 
+      '/api/ongs',
+      '/api/proyectos',
+      '/api/ejes',
+      '/api/kpis',
+      '/api/items',
+      '/api/tipos-datos',
+      '/api/health'
+    ],
     timestamp: new Date().toISOString()
   });
 });

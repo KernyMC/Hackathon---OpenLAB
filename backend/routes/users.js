@@ -19,15 +19,23 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, config.JWT_SECRET);
     
     // Buscar usuario
-    const user = await prisma.user.findUnique({
+    const user = await prisma.usuario.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
-        name: true,
+        nombres: true,
+        apellidos: true,
         email: true,
-        role: true,
+        cedula: true,
+        idTipoUsuario: true,
         createdAt: true,
-        lastLogin: true
+        lastLogin: true,
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
       }
     });
 
@@ -66,19 +74,19 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // Actualizar perfil del usuario
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { nombres, apellidos, email, cedula } = req.body;
     const userId = req.user.id;
 
     // Validar entrada
-    if (!name || !email) {
+    if (!nombres || !apellidos || !email || !cedula) {
       return res.status(400).json({
-        message: 'Nombre y email son requeridos'
+        message: 'Todos los campos son requeridos'
       });
     }
 
     // Verificar si el email ya existe en otro usuario
     if (email !== req.user.email) {
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await prisma.usuario.findUnique({
         where: { email }
       });
 
@@ -89,20 +97,43 @@ router.put('/profile', authenticateToken, async (req, res) => {
       }
     }
 
+    // Verificar si la cédula ya existe en otro usuario
+    if (cedula !== req.user.cedula) {
+      const existingCedula = await prisma.usuario.findFirst({
+        where: { cedula }
+      });
+
+      if (existingCedula) {
+        return res.status(400).json({
+          message: 'La cédula ya está en uso'
+        });
+      }
+    }
+
     // Actualizar usuario
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.usuario.update({
       where: { id: userId },
       data: {
-        name,
-        email
+        nombres,
+        apellidos,
+        email,
+        cedula
       },
       select: {
         id: true,
-        name: true,
+        nombres: true,
+        apellidos: true,
         email: true,
-        role: true,
+        cedula: true,
+        idTipoUsuario: true,
         createdAt: true,
-        lastLogin: true
+        lastLogin: true,
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
       }
     });
 
@@ -122,21 +153,29 @@ router.put('/profile', authenticateToken, async (req, res) => {
 // Obtener lista de usuarios (solo admin)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Verificar si es admin
-    if (req.user.role !== 'admin') {
+    // Verificar si es admin (asumiendo que el tipo de usuario 1 es admin)
+    if (req.user.idTipoUsuario !== 1) {
       return res.status(403).json({
         message: 'Acceso denegado. Se requieren permisos de administrador'
       });
     }
 
-    const users = await prisma.user.findMany({
+    const users = await prisma.usuario.findMany({
       select: {
         id: true,
-        name: true,
+        nombres: true,
+        apellidos: true,
         email: true,
-        role: true,
+        cedula: true,
+        idTipoUsuario: true,
         createdAt: true,
-        lastLogin: true
+        lastLogin: true,
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -160,8 +199,8 @@ router.get('/', authenticateToken, async (req, res) => {
 // Obtener usuario por ID (solo admin)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    // Verificar si es admin
-    if (req.user.role !== 'admin') {
+    // Verificar si es admin (asumiendo que el tipo de usuario 1 es admin)
+    if (req.user.idTipoUsuario !== 1) {
       return res.status(403).json({
         message: 'Acceso denegado. Se requieren permisos de administrador'
       });
@@ -175,15 +214,23 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.usuario.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        name: true,
+        nombres: true,
+        apellidos: true,
         email: true,
-        role: true,
+        cedula: true,
+        idTipoUsuario: true,
         createdAt: true,
-        lastLogin: true
+        lastLogin: true,
+        tipoUsuario: {
+          select: {
+            id: true,
+            descripcion: true
+          }
+        }
       }
     });
 

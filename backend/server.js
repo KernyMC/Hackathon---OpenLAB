@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { initDatabase } = require('./database/init');
+const prisma = require('./lib/prisma');
 const { 
   securityHeaders, 
   strictLimiter, 
@@ -74,9 +74,14 @@ app.use('*', (req, res) => {
   });
 });
 
-// Inicializar base de datos y luego iniciar servidor
-initDatabase()
-  .then(() => {
+// Inicializar Prisma y luego iniciar servidor
+async function startServer() {
+  try {
+    // Conectar a la base de datos
+    await prisma.$connect();
+    console.log('Conexión a PostgreSQL establecida con Prisma');
+
+    // Iniciar servidor
     app.listen(PORT, () => {
       console.log('=====================================');
       console.log('HACKATHON API - SERVIDOR INICIADO');
@@ -90,8 +95,23 @@ initDatabase()
       console.log('Password: password');
       console.log('=====================================');
     });
-  })
-  .catch((error) => {
-    console.error('Error inicializando base de datos:', error);
+  } catch (error) {
+    console.error('Error inicializando servidor:', error);
     process.exit(1);
-  });
+  }
+}
+
+// Manejar cierre graceful
+process.on('SIGINT', async () => {
+  console.log('Cerrando servidor...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('Cerrando servidor...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+startServer();

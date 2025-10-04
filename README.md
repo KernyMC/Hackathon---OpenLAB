@@ -69,12 +69,14 @@ psql -U postgres
 CREATE DATABASE hackathon_db;
 \q
 
-# Ejecutar script de inicialización
-psql -U postgres -d hackathon_db -f database/setup.sql
-
 # Crear archivo .env
-cp .env.example .env
+cp env.example .env
 # Editar .env con tus credenciales de PostgreSQL
+
+# Generar cliente Prisma y aplicar schema
+npm run db:generate
+npm run db:push
+npm run db:seed
 ```
 
 ### 3. Configurar Frontend
@@ -105,16 +107,30 @@ npm run dev
 - **Backend API**: http://localhost:5000
 - **Health Check**: http://localhost:5000/api/health
 
+## 🔧 Scripts Disponibles
+
+### En la raíz del proyecto:
+- `npm run dev` - Ejecuta el backend y el frontend simultáneamente en modo desarrollo.
+- `npm run dev:backend` - Inicia solo el backend en modo desarrollo.
+- `npm run dev:frontend` - Inicia solo el frontend en modo desarrollo.
+
+### En el backend (cd backend):
+- `npm run dev` - Servidor en desarrollo
+- `npm run start` - Servidor en producción
+- `npm run db:generate` - Generar cliente Prisma
+- `npm run db:push` - Aplicar schema a la base de datos
+- `npm run db:migrate` - Crear migración
+- `npm run db:seed` - Crear datos iniciales (usuario admin)
+- `npm run db:studio` - Abrir GUI de Prisma
+- `npm run db:reset` - Resetear base de datos
+
 ## 📋 Guías de Desarrollo
 
 ### Para Backend
-Ver [backend/README.md](backend/README.md)
+Ver [backend/SETUP.md](backend/SETUP.md) - Guía completa de configuración con Prisma
 
 ### Para Frontend
 Ver [frontend/README.md](frontend/README.md)
-
-### Para Base de Datos
-Ver [backend/database/README.md](backend/database/README.md)
 
 ## 🔒 Seguridad
 

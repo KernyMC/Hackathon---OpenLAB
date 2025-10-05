@@ -81,10 +81,10 @@ const AdminDashboard = () => {
     "total-kpis": { x: 3, y: 0, w: 3, h: 2 },
     "items-registered": { x: 6, y: 0, w: 3, h: 2 },
     "total-ejes": { x: 9, y: 0, w: 3, h: 2 },
-    "line-chart": { x: 0, y: 2, w: 6, h: 4 },
-    "multi-line-chart": { x: 6, y: 2, w: 6, h: 4 },
-    "bar-chart": { x: 0, y: 6, w: 6, h: 4 },
-    "pie-chart": { x: 6, y: 6, w: 6, h: 4 },
+    "line-chart": { x: 0, y: 2, w: 6, h: 5.5},
+    "multi-line-chart": { x: 6, y: 2, w: 6, h: 5.5},
+    "bar-chart": { x: 0, y: 6, w: 6, h: 5.5 },
+    "pie-chart": { x: 6, y: 6, w: 6, h: 5.5 },
     "recent-activity": { x: 0, y: 10, w: 12, h: 3 },
   };
 

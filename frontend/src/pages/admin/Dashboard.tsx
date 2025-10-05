@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import {
   Select,
@@ -14,18 +14,79 @@ import { Users, FolderOpen, TrendingUp, Target } from "lucide-react";
 const AdminDashboard = () => {
   const [selectedNGO, setSelectedNGO] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
+  const [ngos, setNgos] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const ngos = [
-    "BAQ",
-    "BAA Cuenca",
-    "BA Esmeraldas",
-    "Fund Amiga",
-    "BA Quevedo",
-  ];
+  // Fetch ONGs from backend
+  useEffect(() => {
+    const fetchONGs = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/ong");
+        const data = await response.json();
+        setNgos(data);
+        console.log("ONGs:", data);
+      } catch (error) {
+        console.error("Error fetching ONGs:", error);
+      }
+    };
 
-  const projects = selectedNGO
-    ? ["Community Garden Initiative", "Youth Education Program", "Water Access Project"]
-    : [];
+    fetchONGs();
+  }, []);
+
+  // Fetch projects when ONG is selected - FILTERED BY ONG
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!selectedNGO) {
+        setProjects([]);
+        return;
+      }
+
+      try {
+        // Fetch only projects for the selected ONG
+        const response = await fetch(
+          `http://localhost:5000/api/proyecto/ong/${selectedNGO}`
+        );
+        const data = await response.json();
+        setProjects(data);
+        console.log("Projects for ONG:", data);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        setProjects([]);
+      }
+    };
+
+    fetchProjects();
+  }, [selectedNGO]);
+
+  // Reset project selection when ONG changes
+  useEffect(() => {
+    setSelectedProject("");
+    setProjects([]); // Clear projects when ONG changes
+  }, [selectedNGO]);
+
+  // Fetch statistics when both ONG and Project are selected
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "http://localhost:5000/api/usuario/estadisticas"
+        );
+        const data = await response.json();
+        setStats(data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        setLoading(false);
+      }
+    };
+
+    if (selectedNGO && selectedProject) {
+      fetchStats();
+    }
+  }, [selectedNGO, selectedProject]);
 
   return (
     <PageLayout role="admin">
@@ -33,7 +94,8 @@ const AdminDashboard = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Panel de Control</h1>
           <p className="text-muted-foreground mt-1">
-            Monitoree y analice el desempeño de las ONGs y las métricas de los proyectos
+            Monitoree y analice el desempeño de las ONGs y las métricas de los
+            proyectos
           </p>
         </div>
 
@@ -46,8 +108,8 @@ const AdminDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {ngos.map((ngo) => (
-                  <SelectItem key={ngo} value={ngo}>
-                    {ngo}
+                  <SelectItem key={ngo.id} value={ngo.id.toString()}>
+                    {ngo.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -59,15 +121,23 @@ const AdminDashboard = () => {
             <Select
               value={selectedProject}
               onValueChange={setSelectedProject}
-              disabled={!selectedNGO}
+              disabled={!selectedNGO || projects.length === 0}
             >
               <SelectTrigger id="project-select">
-                <SelectValue placeholder="Elija un proyecto" />
+                <SelectValue 
+                  placeholder={
+                    !selectedNGO 
+                      ? "Primero seleccione una ONG" 
+                      : projects.length === 0 
+                        ? "No hay proyectos disponibles"
+                        : "Elija un proyecto"
+                  } 
+                />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((project) => (
-                  <SelectItem key={project} value={project}>
-                    {project}
+                  <SelectItem key={project.id} value={project.id.toString()}>
+                    {project.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -75,39 +145,54 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {selectedNGO && (
+        {/* Show data only when BOTH ONG and Project are selected */}
+        {selectedNGO && selectedProject ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Proyectos</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total de Proyectos
+                  </CardTitle>
                   <FolderOpen className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">+2 desde el mes pasado</p>
+                  <div className="text-2xl font-bold">
+                    {projects.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Para esta ONG
+                  </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Beneficiarios Activos</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Beneficiarios Activos
+                  </CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">1,234</div>
-                  <p className="text-xs text-muted-foreground">+18% desde el mes pasado</p>
+                  <p className="text-xs text-muted-foreground">
+                    +18% desde el mes pasado
+                  </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Puntuación de Impacto</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Puntuación de Impacto
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">87%</div>
-                  <p className="text-xs text-muted-foreground">+5% desde el mes pasado</p>
+                  <p className="text-xs text-muted-foreground">
+                    +5% desde el mes pasado
+                  </p>
                 </CardContent>
               </Card>
 
@@ -118,7 +203,9 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">9/12</div>
-                  <p className="text-xs text-muted-foreground">75% tasa de finalización</p>
+                  <p className="text-xs text-muted-foreground">
+                    75% tasa de finalización
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -134,21 +221,27 @@ const AdminDashboard = () => {
                       <div className="w-2 h-2 bg-primary rounded-full" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Nuevo proyecto creado</p>
-                        <p className="text-xs text-muted-foreground">Hace 2 horas</p>
+                        <p className="text-xs text-muted-foreground">
+                          Hace 2 horas
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-2 h-2 bg-success rounded-full" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Informe enviado</p>
-                        <p className="text-xs text-muted-foreground">Hace 5 horas</p>
+                        <p className="text-xs text-muted-foreground">
+                          Hace 5 horas
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-2 h-2 bg-primary rounded-full" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Gerente actualizado</p>
-                        <p className="text-xs text-muted-foreground">Hace 1 día</p>
+                        <p className="text-xs text-muted-foreground">
+                          Hace 1 día
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -159,40 +252,20 @@ const AdminDashboard = () => {
                 <CardHeader>
                   <CardTitle>Distribución de Áreas de Enfoque</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {[
-                      { area: "Educación", percentage: 35 },
-                      { area: "Medio Ambiente", percentage: 25 },
-                      { area: "Nutrición", percentage: 20 },
-                      { area: "Emprendimiento", percentage: 15 },
-                      { area: "Equidad de Género", percentage: 5 },
-                    ].map((item) => (
-                      <div key={item.area} className="space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>{item.area}</span>
-                          <span className="font-medium">{item.percentage}%</span>
-                        </div>
-                        <div className="w-full bg-secondary rounded-full h-2">
-                          <div
-                            className="bg-primary rounded-full h-2 transition-all"
-                            style={{ width: `${item.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
+      
               </Card>
             </div>
           </div>
-        )}
-
-        {!selectedNGO && (
+        ) : (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
               <p className="text-muted-foreground">
-                Seleccione una ONG para ver las métricas del panel
+                {!selectedNGO 
+                  ? "Seleccione una ONG para continuar"
+                  : projects.length === 0
+                    ? "Esta ONG no tiene proyectos disponibles"
+                    : "Seleccione un proyecto para ver las métricas del panel"
+                }
               </p>
             </CardContent>
           </Card>
@@ -201,5 +274,6 @@ const AdminDashboard = () => {
     </PageLayout>
   );
 };
+
 
 export default AdminDashboard;

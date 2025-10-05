@@ -6,10 +6,29 @@ const itemService = require("../services/item.service");
 // GET todos los items
 router.get("/", async (req, res) => {
   try {
-    const items = await itemService.getAllItems();
+    const { idProyecto, mes, year } = req.query;
+
+    const where = {};
+    if (idProyecto) where.idProyecto = parseInt(idProyecto);
+    if (mes) where.idMes = parseInt(mes);
+    if (year) where.year = parseInt(year);
+
+    const items = await prisma.item.findMany({
+      where,
+      include: {
+        kpi: true,
+        proyecto: true,
+        mes: true,
+      },
+      orderBy: {
+        year: "desc",
+      },
+    });
+
     res.json(items);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching items:", error);
+    res.status(500).json({ error: "Error al obtener items" });
   }
 });
 

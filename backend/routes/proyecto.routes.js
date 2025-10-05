@@ -66,7 +66,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Obtener proyectos por ID de ONG
-router.get("/proyecto/ong/:idOng", async (req, res) => {
+router.get("/ong/:idOng", async (req, res) => {
   try {
     const { idOng } = req.params;
     const proyectos = await prisma.proyecto.findMany({

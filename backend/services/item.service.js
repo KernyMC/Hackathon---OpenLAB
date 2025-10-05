@@ -3,7 +3,6 @@ const prisma = require("../lib/prisma");
 function getAllItems() {
   return prisma.item.findMany({
     include: {
-      kpi: true,
       proyecto: true,
       mes: true,
     },

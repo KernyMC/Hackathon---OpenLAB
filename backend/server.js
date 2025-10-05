@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const swaggerUi = require("swagger-ui-express");
-const { swaggerSpec } = require("./config/swagger");
 
 // Importar rutas
 const tipoUsuarioRoutes = require("./routes/tipoUsuario.route");
@@ -19,6 +17,9 @@ const tipoDatoItemRoutes = require("./routes/tipoDatoItem.routes");
 const itemRoutes = require("./routes/item.routes");
 const itemObservableRoutes = require("./routes/itemObservable.routes");
 
+//graficos
+const graficoKpiRoutes = require("./routes/graficos/graficoKpi.route");
+
 dotenv.config();
 
 const app = express();
@@ -32,7 +33,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/tipo-usuario", tipoUsuarioRoutes);
 app.use("/api/usuario", usuariosRoutes);
 app.use("/api/ong", ongRoutes);
@@ -46,6 +46,7 @@ app.use("/api/mes", mesRoutes);
 app.use("/api/tipo-dato-item", tipoDatoItemRoutes);
 app.use("/api/item", itemRoutes);
 app.use("/api/item-observable", itemObservableRoutes);
+app.use("/api/grafico-kpi", graficoKpiRoutes);
 
 app.get("/", (req, res) => {
   res.send("Servidor funcionando correctamente");

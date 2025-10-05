@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,83 +8,71 @@ datasource db {
 }
 
 model TipoUsuario {
-  id          Int      @id @default(autoincrement())
-  descripcion String   @db.VarChar(100)
-  
-  // Relaciones
+  id          Int       @id @default(autoincrement())
+  descripcion String    @db.VarChar(100)
   usuarios    Usuario[]
-  
+
   @@map("TipoUsuario")
 }
 
 model Usuario {
-  id            Int         @id @default(autoincrement())
-  nombres       String      @db.VarChar(100)
-  apellidos     String      @db.VarChar(100)
-  email         String      @unique @db.VarChar(150)
-  password      String      @db.VarChar(255)
-  cedula        String      @db.VarChar(150)
-  idTipoUsuario Int         @map("id_tipo_usuario")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  lastLogin     DateTime?   @map("last_login")
-  
-  // Relaciones
-  tipoUsuario   TipoUsuario @relation(fields: [idTipoUsuario], references: [id])
-  usuarioOngs   UsuarioOng[]
+  id            Int          @id @default(autoincrement())
+  nombres       String       @db.VarChar(100)
+  apellidos     String       @db.VarChar(100)
+  email         String       @unique @db.VarChar(150)
+  password      String       @db.VarChar(255)
+  cedula        String       @db.VarChar(150)
+  idTipoUsuario Int          @map("id_tipo_usuario")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  lastLogin     DateTime?    @map("last_login")
+  tipoUsuario   TipoUsuario  @relation(fields: [idTipoUsuario], references: [id])
   sessions      Session[]
-  
+  usuarioOngs   UsuarioOng[]
+
   @@map("Usuario")
 }
 
 model ONG {
-  id          Int         @id @default(autoincrement())
-  nombre      String      @db.VarChar(150)
+  id          Int          @id @default(autoincrement())
+  nombre      String       @db.VarChar(150)
   descripcion String?
-  
-  // Relaciones
-  usuarioOngs UsuarioOng[]
   proyectos   Proyecto[]
-  
+  usuarioOngs UsuarioOng[]
+
   @@map("ONG")
 }
 
 model UsuarioOng {
-  id       Int @id @default(autoincrement())
-  idUsuario Int @map("id_usuario")
-  idOng    Int @map("id_ong")
-  
-  // Relaciones
-  usuario  Usuario @relation(fields: [idUsuario], references: [id])
-  ong      ONG     @relation(fields: [idOng], references: [id])
-  
+  id        Int     @id @default(autoincrement())
+  idUsuario Int     @map("id_usuario")
+  idOng     Int     @map("id_ong")
+  ong       ONG     @relation(fields: [idOng], references: [id])
+  usuario   Usuario @relation(fields: [idUsuario], references: [id])
+
   @@map("usuario_ong")
 }
 
 model Proyecto {
-  id          Int    @id @default(autoincrement())
-  nombre      String @db.VarChar(150)
-  descripcion String?
-  idOng       Int    @map("id_ong")
-  
-  // Relaciones
-  ong         ONG    @relation(fields: [idOng], references: [id])
-  ejes        Eje[]
-  ejesObservables EjeObservable[]
-  items       Item[]
+  id               Int              @id @default(autoincrement())
+  nombre           String           @db.VarChar(150)
+  descripcion      String?
+  idOng            Int              @map("id_ong")
+  ejes             Eje[]
+  ejesObservables  EjeObservable[]
+  items            Item[]
   itemsObservables ItemObservable[]
-  
+  ong              ONG              @relation(fields: [idOng], references: [id])
+
   @@map("Proyecto")
 }
 
 model Eje {
-  id         Int    @id @default(autoincrement())
-  nombre     String @db.VarChar(150)
-  idProyecto Int    @map("id_proyecto")
-  
-  // Relaciones
+  id         Int      @id @default(autoincrement())
+  nombre     String   @db.VarChar(150)
+  idProyecto Int      @map("id_proyecto")
   proyecto   Proyecto @relation(fields: [idProyecto], references: [id])
   kpis       KPI[]
-  
+
   @@map("Eje")
 }
 
@@ -95,89 +80,76 @@ model KPI {
   id     Int    @id @default(autoincrement())
   nombre String @db.VarChar(150)
   idEje  Int    @map("id_eje")
-  idTipoDatoItem    Int            @map("id_tipo_dato_item")
-  
-  // Relaciones
-  eje    Eje    @relation(fields: [idEje], references: [id])
   items  Item[]
-  tipoDatoItem      TipoDatoItem   @relation(fields: [idTipoDatoItem], references: [id])
-  
+  eje    Eje    @relation(fields: [idEje], references: [id])
+
   @@map("KPI")
 }
 
 model Item {
-  id                Int            @id @default(autoincrement())
-  idKpi             Int            @map("id_kpi")
-  idProyecto        Int            @map("id_proyecto")
+  id                Int           @id @default(autoincrement())
+  idKpi             Int           @map("id_kpi")
+  idProyecto        Int           @map("id_proyecto")
   descripcion       String?
-  idMes             Int            @map("id_mes")
+  idMes             Int           @map("id_mes")
   year              Int
+  id_tipo_dato_item Int?
+  kpi               KPI           @relation(fields: [idKpi], references: [id])
+  mes               Mes           @relation(fields: [idMes], references: [id])
+  proyecto          Proyecto      @relation(fields: [idProyecto], references: [id])
+  tipo_dato_item    TipoDatoItem? @relation(fields: [id_tipo_dato_item], references: [id], onDelete: Cascade)
 
-
-  // Relaciones
-  kpi               KPI            @relation(fields: [idKpi], references: [id])
-  proyecto          Proyecto       @relation(fields: [idProyecto], references: [id])
-  mes               Mes            @relation(fields: [idMes], references: [id])
   @@map("Item")
 }
 
 model EjeObservable {
-  id         Int    @id @default(autoincrement())
-  nombre     String @db.VarChar(150)
-  idProyecto Int    @map("id_proyecto")
-  
-  // Relaciones
-  proyecto   Proyecto @relation(fields: [idProyecto], references: [id])
+  id              Int             @id @default(autoincrement())
+  nombre          String          @db.VarChar(150)
+  idProyecto      Int             @map("id_proyecto")
+  proyecto        Proyecto        @relation(fields: [idProyecto], references: [id])
   kpisObservables KPIObservable[]
-  
+
   @@map("Eje_Observable")
 }
 
 model KPIObservable {
-  id     Int    @id @default(autoincrement())
-  nombre String @db.VarChar(150)
-  idEje  Int    @map("id_eje")
-  
-  // Relaciones
-  eje    EjeObservable @relation(fields: [idEje], references: [id])
+  id               Int              @id @default(autoincrement())
+  nombre           String           @db.VarChar(150)
+  idEje            Int              @map("id_eje")
   itemsObservables ItemObservable[]
-  
+  eje              EjeObservable    @relation(fields: [idEje], references: [id])
+
   @@map("KPI_Observable")
 }
 
 model ItemObservable {
-  id                Int            @id @default(autoincrement())
-  idKpi             Int            @map("id_kpi")
-  idProyecto        Int            @map("id_proyecto")
-  descripcion       String?
-  idMes             Int            @map("id_mes")
-  year              Int
-
-
-  // Relaciones
-  kpi               KPIObservable  @relation(fields: [idKpi], references: [id])
-  proyecto          Proyecto       @relation(fields: [idProyecto], references: [id])
-  mes               Mes            @relation(fields: [idMes], references: [id])
+  id          Int           @id @default(autoincrement())
+  idKpi       Int           @map("id_kpi")
+  idProyecto  Int           @map("id_proyecto")
+  descripcion String?
+  idMes       Int           @map("id_mes")
+  year        Int
+  kpi         KPIObservable @relation(fields: [idKpi], references: [id])
+  mes         Mes           @relation(fields: [idMes], references: [id])
+  proyecto    Proyecto      @relation(fields: [idProyecto], references: [id])
 
   @@map("Item_Observable")
 }
 
 model TipoDatoItem {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   descripcion String? @db.VarChar(150)
-  
-  // Relaciones
-  KPI       KPI[]
-  
+  unidad      String?
+  Item        Item[]
+
   @@map("tipo_dato_item")
 }
 
 model Mes {
-  id          Int         @id
-  descripcion String
-
-  items              Item[]
-  itemsObservables   ItemObservable[]
+  id               Int              @id
+  descripcion      String
+  items            Item[]
+  itemsObservables ItemObservable[]
 
   @@map("mes")
 }
@@ -188,9 +160,7 @@ model Session {
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
   user      Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("sessions")
 }

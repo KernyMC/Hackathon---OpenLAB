@@ -14,6 +14,7 @@ function createTipoDatoItem(data) {
   return prisma.tipoDatoItem.create({
     data: {
       descripcion: data.descripcion,
+      unidad: data.unidad,
     },
   });
 }
@@ -23,6 +24,7 @@ function updateTipoDatoItem(id, data) {
     where: { id: Number(id) },
     data: {
       descripcion: data.descripcion,
+      unidad: data.unidad,
     },
   });
 }

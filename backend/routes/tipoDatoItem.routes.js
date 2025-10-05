@@ -28,12 +28,17 @@ router.get("/:id", async (req, res) => {
 // POST crear tipo de dato
 router.post("/", async (req, res) => {
   try {
-    const { descripcion } = req.body;
-    if (!descripcion) {
-      return res.status(400).json({ message: "Se requiere descripcion" });
+    const { descripcion, unidad } = req.body;
+    if (!descripcion || !unidad) {
+      return res
+        .status(400)
+        .json({ message: "Se requiere descripcion y unidad" });
     }
 
-    const nuevo = await tipoDatoItemService.createTipoDatoItem({ descripcion });
+    const nuevo = await tipoDatoItemService.createTipoDatoItem({
+      descripcion,
+      unidad,
+    });
     res.status(201).json(nuevo);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -43,10 +48,10 @@ router.post("/", async (req, res) => {
 // PUT actualizar tipo de dato
 router.put("/:id", async (req, res) => {
   try {
-    const { descripcion } = req.body;
+    const { descripcion, unidad } = req.body;
     const actualizado = await tipoDatoItemService.updateTipoDatoItem(
       req.params.id,
-      { descripcion }
+      { descripcion, unidad }
     );
     res.json(actualizado);
   } catch (error) {

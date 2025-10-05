@@ -95,10 +95,12 @@ model KPI {
   id     Int    @id @default(autoincrement())
   nombre String @db.VarChar(150)
   idEje  Int    @map("id_eje")
+  idTipoDatoItem    Int            @map("id_tipo_dato_item")
   
   // Relaciones
   eje    Eje    @relation(fields: [idEje], references: [id])
   items  Item[]
+  tipoDatoItem      TipoDatoItem   @relation(fields: [idTipoDatoItem], references: [id])
   
   @@map("KPI")
 }
@@ -108,13 +110,14 @@ model Item {
   idKpi             Int            @map("id_kpi")
   idProyecto        Int            @map("id_proyecto")
   descripcion       String?
-  idTipoDatoItem    Int            @map("id_tipo_dato_item")
-  
+  idMes             Int            @map("id_mes")
+  year              Int
+
+
   // Relaciones
   kpi               KPI            @relation(fields: [idKpi], references: [id])
   proyecto          Proyecto       @relation(fields: [idProyecto], references: [id])
-  tipoDatoItem      TipoDatoItem   @relation(fields: [idTipoDatoItem], references: [id])
-  
+  mes               Mes            @relation(fields: [idMes], references: [id])
   @@map("Item")
 }
 
@@ -147,13 +150,15 @@ model ItemObservable {
   idKpi             Int            @map("id_kpi")
   idProyecto        Int            @map("id_proyecto")
   descripcion       String?
-  idTipoDatoItem    Int            @map("id_tipo_dato_item")
-  
+  idMes             Int            @map("id_mes")
+  year              Int
+
+
   // Relaciones
   kpi               KPIObservable  @relation(fields: [idKpi], references: [id])
   proyecto          Proyecto       @relation(fields: [idProyecto], references: [id])
-  tipoDatoItem      TipoDatoItem   @relation(fields: [idTipoDatoItem], references: [id])
-  
+  mes               Mes            @relation(fields: [idMes], references: [id])
+
   @@map("Item_Observable")
 }
 
@@ -162,10 +167,19 @@ model TipoDatoItem {
   descripcion String? @db.VarChar(150)
   
   // Relaciones
-  items       Item[]
-  itemsObservables ItemObservable[]
+  KPI       KPI[]
   
   @@map("tipo_dato_item")
+}
+
+model Mes {
+  id          Int         @id
+  descripcion String
+
+  items              Item[]
+  itemsObservables   ItemObservable[]
+
+  @@map("mes")
 }
 
 model Session {

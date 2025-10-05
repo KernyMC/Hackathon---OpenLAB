@@ -1,8 +1,14 @@
 const OpenAI = require("openai");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const resolvedApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
+let openai = null;
+if (resolvedApiKey) {
+  openai = new OpenAI({ apiKey: resolvedApiKey });
+} else {
+  console.warn(
+    "OPENAI_API_KEY no definido. Define OPENAI_API_KEY en backend/.env (o VITE_OPENAI_API_KEY) para habilitar OpenAI."
+  );
+}
 
 class OpenAIService {
   async generateReportDescription(reportData) {
@@ -39,6 +45,7 @@ Genera un análisis profesional en español que incluya:
 El tono debe ser profesional, objetivo y orientado a la toma de decisiones.
       `;
 
+      if (!openai) throw new Error("OpenAI no configurado");
       const completion = await openai.chat.completions.create({
         model: "GPT-4o-mini",
         messages: [
@@ -104,6 +111,7 @@ RECOMENDACIONES:
   // Validar disponibilidad de OpenAI
   async checkConnection() {
     try {
+      if (!openai) throw new Error("OpenAI no configurado");
       await openai.models.list();
       return { available: true, message: "OpenAI API conectada correctamente" };
     } catch (error) {

@@ -73,7 +73,16 @@ const PpxButtonGlobalSimple = ({ data, onSuccess, onError }: PpxButtonGlobalSimp
   return (
     <div style={{ display: "grid", gap: 8, placeItems: "center" }}>
       <div id="modalPaybox" />
-      <button id="pay" type="submit" style={buttonStyle} title="Pagar con Plux Paybox" />
+      <button
+        id="pay"
+        type="button"
+        style={buttonStyle}
+        title="Pagar con Plux Paybox"
+        onClick={() => {
+          initPlux();
+          startPolling();
+        }}
+      />
     </div>
   );
 };

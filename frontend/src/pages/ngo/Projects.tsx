@@ -39,7 +39,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Pencil, Trash2, Search, Upload, X, Calendar, FileText } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Search, Upload, X, Calendar, FileText, Info, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Project, Report, Eje, Indicator } from "@/types/project";
@@ -80,6 +80,9 @@ const NGOProjects = () => {
     projectStore.getReportsByOng(currentNGO.name)
   );
   const [isViewMode, setIsViewMode] = useState(false);
+  // Archivos adjuntos
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string>("");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   // Modal de confirmación antes de enviar
@@ -183,6 +186,8 @@ const NGOProjects = () => {
     setSelectedEjeData(null);
     setIndicatorValues({});
     setIsViewMode(false);
+    setAttachedFiles([]);
+    setFileError("");
 
     toast({
       title: "Reporte enviado",
@@ -246,6 +251,31 @@ const NGOProjects = () => {
   // Función para actualizar valor de indicador
   const updateIndicatorValue = (indicator: string, value: string) => {
     setIndicatorValues(prev => ({ ...prev, [indicator]: value }));
+  };
+
+  // Manejo de archivos
+  const ACCEPTED_TYPES = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+    "text/csv",
+    "image/png",
+    "image/jpeg",
+  ];
+
+  const onPickFiles = (files: FileList | null) => {
+    if (!files) return;
+    const list = Array.from(files);
+    const invalid = list.find(f => !ACCEPTED_TYPES.includes(f.type));
+    if (invalid) {
+      setFileError("Formato no permitido. Sube .xlsx, .csv, .png o .jpg");
+      return;
+    }
+    const next = [...attachedFiles, ...list].slice(0, 10);
+    setAttachedFiles(next);
+    setFileError("");
+  };
+
+  const removeFileAt = (idx: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
   // Cálculo automático de recuperación de alimentos (solo para Nutrición)
@@ -327,9 +357,9 @@ const NGOProjects = () => {
 
   return (
     <PageLayout role="ngo">
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-6xl mx-auto px-2 md:px-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Proyectos</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Proyectos</h1>
           <p className="text-muted-foreground mt-1">
             Seleccione el mes haciendo click en los badges para reportar o ver reportes existentes
           </p>
@@ -342,41 +372,48 @@ const NGOProjects = () => {
                 placeholder="Buscar proyectos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 rounded-lg shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
               />
             </div>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {isViewMode ? "Ver Reporte" : "Reporte de Indicadores"}
-                </DialogTitle>
-                {isViewMode && (
-                  <p className="text-sm text-muted-foreground pt-2">
-                    Este reporte ya fue enviado y no puede ser editado
-                  </p>
-                )}
+                <div className="bg-gradient-to-r from-primary to-primary/80 text-white px-6 py-5 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <DialogTitle className="text-white">
+                      {isViewMode ? "Ver Reporte" : "Reporte de Indicadores"}
+                    </DialogTitle>
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                      {selectedMonth || "Mes"}
+                    </Badge>
+                  </div>
+                  {isViewMode && (
+                    <p className="text-sm text-white/90 pt-2">
+                      Este reporte ya fue enviado y no puede ser editado
+                    </p>
+                  )}
+                </div>
               </DialogHeader>
               <div className="space-y-6 py-4">
                 {/* Información de la ONG y Proyecto (solo lectura) */}
-                <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="border rounded-lg p-4 bg-muted/30 backdrop-blur-sm">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm text-muted-foreground">Organización</Label>
-                      <p className="font-semibold">{currentNGO.name}</p>
+                      <p className="font-semibold tracking-tight">{currentNGO.name}</p>
                     </div>
                     <div>
                       <Label className="text-sm text-muted-foreground">Responsable</Label>
-                      <p className="font-semibold">{currentNGO.responsable}</p>
+                      <p className="font-semibold tracking-tight">{currentNGO.responsable}</p>
                     </div>
                     <div>
                       <Label className="text-sm text-muted-foreground">Proyecto</Label>
-                      <p className="font-semibold">{selectedProject?.name || "—"}</p>
+                      <p className="font-semibold tracking-tight">{selectedProject?.name || "—"}</p>
                     </div>
                     <div>
                       <Label className="text-sm text-muted-foreground">Mes de Reporte</Label>
-                      <p className="font-semibold">{selectedMonth || "—"}</p>
+                      <p className="font-semibold tracking-tight">{selectedMonth || "—"}</p>
                     </div>
                   </div>
                 </div>
@@ -393,19 +430,55 @@ const NGOProjects = () => {
 
                 {renderIndicators()}
 
+                {/* Adjuntos */}
                 {!isViewMode && (
-                  <div className="pt-4 border-t">
-                    <Button variant="outline" className="gap-2 w-full">
-                      <Upload className="w-4 h-4" />
-                      Subir Archivos
-                    </Button>
+                  <div className="border border-dashed border-red-950 rounded-lg p-4 bg-red-950/15 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-base font-semibold text-red-950">Archivos adjuntos</Label>
+                      <span className="text-xs flex items-center gap-1 text-red-950/80"><Info className="w-3 h-3" /> Máx. 10 archivos (.xlsx, .csv, .png, .jpg)</span>
+                    </div>
+                    <div className="grid gap-3">
+                      <div className="flex gap-2">
+                        <label htmlFor="file-input" className="inline-flex items-center gap-2 px-3 py-2 border border-red-950 text-red-950 rounded-md cursor-pointer bg-white/70 hover:bg-red-950/15 transition-colors">
+                          <Upload className="w-4 h-4" />
+                          Seleccionar archivos
+                        </label>
+                        <input
+                          id="file-input"
+                          type="file"
+                          accept=".xlsx,.csv,image/png,image/jpeg"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => onPickFiles(e.target.files)}
+                        />
+                      </div>
+                      {fileError && <p className="text-xs text-red-950">{fileError}</p>}
+                      {attachedFiles.length > 0 && (
+                        <div className="space-y-2">
+                          {attachedFiles.map((f, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 rounded-md border border-red-950/40 bg-red-950/10">
+                              <div className="flex items-center gap-2">
+                                <Paperclip className="w-4 h-4 text-red-950/70" />
+                                <span className="text-sm font-medium text-red-950">{f.name}</span>
+                                <span className="text-xs text-red-950/70">({(f.size/1024).toFixed(1)} KB)</span>
+                              </div>
+                              <Button variant="ghost" size="icon" className="text-red-950 hover:bg-red-950/15" onClick={() => removeFileAt(idx)}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
+
+                {/* Botonera */}
 
                 <div className="flex gap-3 pt-4">
                   {!isViewMode ? (
                     <>
-                      <Button onClick={handlePreSubmit} className="flex-1">
+                      <Button onClick={handlePreSubmit} className="flex-1 bg-red-950 hover:bg-red-900 text-white">
                         Enviar Reporte
                       </Button>
                       <Button
@@ -417,7 +490,7 @@ const NGOProjects = () => {
                           setIndicatorValues({});
                           setIsViewMode(false);
                         }}
-                        className="flex-1"
+                        className="flex-1 border-red-950 text-red-950 hover:bg-red-950/10"
                       >
                         Cancelar
                       </Button>
@@ -433,7 +506,7 @@ const NGOProjects = () => {
                         setIsViewMode(false);
                         setSelectedReport(null);
                       }}
-                      className="w-full"
+                      className="w-full border-red-950 text-red-950 hover:bg-red-950/10"
                     >
                       Cerrar
                     </Button>
@@ -443,7 +516,7 @@ const NGOProjects = () => {
             </DialogContent>
         </Dialog>
 
-            <div className="border rounded-lg bg-card">
+            <div className="border rounded-lg bg-card shadow-sm">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -455,12 +528,14 @@ const NGOProjects = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredProjects.map((project) => (
-                    <TableRow key={project.id}>
+                    <TableRow key={project.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">{project.name}</TableCell>
                       <TableCell>
                         <div className="flex gap-1 flex-wrap">
                           {project.ejes.map((eje) => (
-                            <Badge key={eje.name} variant="outline">{eje.name}</Badge>
+                            <Badge key={eje.name} variant="outline" className="rounded-full px-2">
+                              {eje.name}
+                            </Badge>
                           ))}
                         </div>
                       </TableCell>
@@ -473,17 +548,17 @@ const NGOProjects = () => {
                               <button
                                 key={month}
                                 className={cn(
-                                  "h-8 px-2 text-[11px] font-medium rounded border transition-all",
+                                  "h-8 px-2 text-[11px] font-medium rounded-md border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
                                   hasReport
-                                    ? "bg-green-50 border-green-500 text-green-700 hover:bg-green-100"
-                                    : "bg-white border-gray-200 text-gray-600 hover:border-primary hover:bg-primary/5"
+                                    ? "bg-emerald-50 border-emerald-500 text-emerald-700 hover:bg-emerald-100"
+                                    : "bg-white border-gray-200 text-gray-700 hover:border-primary hover:bg-primary/5"
                                 )}
                                 onClick={() => handleMonthBadgeClick(project, month)}
                                 title={hasReport ? `${month} - Reportado` : `${month} - Click para reportar`}
                               >
                                 {month.substring(0, 3)}
                                 {hasReport && (
-                                  <span className="ml-0.5 text-green-600">✓</span>
+                                  <span className="ml-0.5 text-emerald-600">✓</span>
                                 )}
                               </button>
                             );

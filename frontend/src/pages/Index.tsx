@@ -690,21 +690,21 @@ const Index = () => {
             </div>
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-8">
-                <SmoothScrollLink href="#mission" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'mission' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700 hover:text-red-600'}`}>
+                <SmoothScrollLink href="#mission" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'mission' ? 'text-red-950 border-b-2 border-red-950' : 'text-gray-700 hover:text-red-900'}`}>
                   Misión
                 </SmoothScrollLink>
-                <SmoothScrollLink href="#ngos" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'ngos' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700 hover:text-red-600'}`}>
+                <SmoothScrollLink href="#ngos" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'ngos' ? 'text-red-950 border-b-2 border-red-950' : 'text-gray-700 hover:text-red-900'}`}>
                   ONGs Asociadas
                 </SmoothScrollLink>
-                <SmoothScrollLink href="#projects" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'projects' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700 hover:text-red-600'}`}>
+                <SmoothScrollLink href="#projects" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'projects' ? 'text-red-950 border-b-2 border-red-950' : 'text-gray-700 hover:text-red-900'}`}>
                   Proyectos
                 </SmoothScrollLink>
-                <SmoothScrollLink href="#contact" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'contact' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700 hover:text-red-600'}`}>
+                <SmoothScrollLink href="#contact" className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === 'contact' ? 'text-red-950 border-b-2 border-red-950' : 'text-gray-700 hover:text-red-900'}`}>
                   Contacto
                 </SmoothScrollLink>
                 <Button 
                   onClick={() => setIsDonationModalOpen(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 text-sm font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                  className="bg-red-950 hover:bg-red-900 text-white px-6 py-2 text-sm font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   Donar Ahora
                 </Button>
@@ -714,7 +714,7 @@ const Index = () => {
             <div className="md:hidden">
               <Button 
                 onClick={() => setIsDonationModalOpen(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold rounded-full hover:scale-105 transition-transform"
+                className="bg-red-950 hover:bg-red-900 text-white px-4 py-2 text-sm font-semibold rounded-full hover:scale-105 transition-transform"
               >
                 Donar
               </Button>
@@ -733,22 +733,22 @@ const Index = () => {
             
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-black mb-6 leading-tight">
               Construyendo un Ecuador
-              <span className="text-red-600 block bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+              <span className="text-red-950 block bg-gradient-to-r from-red-950 to-red-900 bg-clip-text text-transparent">
                 Más Solidario
               </span>
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-red-100 text-red-800 text-sm font-medium mb-6 animate-pulse">
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-red-950/10 text-red-950 text-sm font-medium mb-6 animate-pulse">
               <Award className="w-4 h-4 mr-2" />
                 Juntos construimos un Ecuador solidario y con futuro.
               </div>
             </h1>
               <p className="text-lg sm:text-xl text-gray-600 mb-8 leading-relaxed">
               Conectamos organizaciones, potenciamos proyectos sociales y generamos 
-              <span className="font-semibold text-red-600"> impacto real</span> en las comunidades más vulnerables del Ecuador.
+              <span className="font-semibold text-red-950"> impacto real</span> en las comunidades más vulnerables del Ecuador.
             </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
                 <Button 
                   onClick={() => setIsDonationModalOpen(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 text-lg rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="bg-red-950 hover:bg-red-900 text-white px-8 py-4 text-lg rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   Donar Aquí
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -796,7 +796,7 @@ const Index = () => {
                     {/* Imagen circular mejorada con aro y sombras sutiles */}
                     <div className="relative w-full h-full z-10">
                       {/* Aro exterior sutil */}
-                      <div className="absolute -inset-1 rounded-full border-2 border-red-200/60"></div>
+                    <div className="absolute -inset-1 rounded-full border-2 border-red-950/40"></div>
                       
                       <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl">
                         <img 
@@ -814,7 +814,7 @@ const Index = () => {
                     {/* Sin mancha exterior: diseño limpio */}
                     
                     {/* Chip decorativo profesional */}
-                    <div className="absolute -top-2 -right-2 px-3 py-1 rounded-full bg-red-600 text-white shadow-lg border-2 border-white text-xs font-semibold">
+                    <div className="absolute -top-2 -right-2 px-3 py-1 rounded-full bg-red-950 text-white shadow-lg border-2 border-white text-xs font-semibold">
                       Acción Social
                     </div>
                     
@@ -832,25 +832,25 @@ const Index = () => {
           <div className="mt-16">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-600 mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-950 mb-2">
                   <AnimatedCounter end={15} />
                 </div>
                 <div className="text-sm sm:text-base text-gray-600 font-medium">ONGs Asociadas</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-600 mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-950 mb-2">
                   <AnimatedCounter end={50} />
                 </div>
                 <div className="text-sm sm:text-base text-gray-600 font-medium">Proyectos Activos</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-600 mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-950 mb-2">
                   <AnimatedCounter end={5000} />
                 </div>
                 <div className="text-sm sm:text-base text-gray-600 font-medium">Familias Beneficiadas</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-600 mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-950 mb-2">
                   $<AnimatedCounter end={2} />M+
                 </div>
                 <div className="text-sm sm:text-base text-gray-600 font-medium">Inversión Social</div>
@@ -871,9 +871,9 @@ const Index = () => {
           <div className="text-center mb-16">
             
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              Sobre <span className="text-red-600">Fundación Favorita</span>
+              Sobre <span className="text-red-950">Fundación Favorita</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-red-500 to-red-600 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-900 to-red-950 mx-auto rounded-full"></div>
           </div>
 
           {/* Contenido Principal (nuevo orden: Misión | 70 Años | Visión, y abajo Nuestra Historia) */}
@@ -881,8 +881,8 @@ const Index = () => {
             {/* Misión */}
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                  <Target className="w-5 h-5 text-red-600" />
+                <div className="w-10 h-10 bg-red-950/10 rounded-lg flex items-center justify-center mr-3">
+                  <Target className="w-5 h-5 text-red-950" />
                 </div>
                 <h4 className="text-xl font-bold text-gray-900">Misión</h4>
               </div>
@@ -916,8 +916,8 @@ concretos.
             {/* Visión */}
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                  <Eye className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                  <Eye className="w-5 h-5 text-red-600" />
                 </div>
                 <h4 className="text-xl font-bold text-gray-900">Visión</h4>
               </div>
@@ -1002,8 +1002,8 @@ calidad de vida.
                 <div className="p-8 lg:p-12 flex flex-col justify-center">
                   <div className="mb-6">
                     <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4">
-                        <Building2 className="w-6 h-6 text-red-600" />
+                <div className="w-12 h-12 bg-red-950/10 rounded-xl flex items-center justify-center mr-4">
+                        <Building2 className="w-6 h-6 text-red-950" />
                       </div>
                       <div>
                         <h4 className="text-lg font-semibold text-gray-900">Fundada en {ngosData[currentNGOIndex].founded}</h4>
@@ -1020,7 +1020,7 @@ calidad de vida.
                     <h5 className="font-semibold text-gray-900 mb-3">Áreas de Enfoque</h5>
                         <div className="flex flex-wrap gap-2">
                       {ngosData[currentNGOIndex].focus.map((area, index) => (
-                        <Badge key={index} className="bg-red-100 text-red-800 px-3 py-1">
+                        <Badge key={index} className="bg-red-950/10 text-red-950 px-3 py-1">
                               {area}
                             </Badge>
                           ))}
@@ -1029,14 +1029,14 @@ calidad de vida.
                     
                   <div className="flex items-center space-x-4">
                     <Button 
-                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full"
+                      className="bg-red-950 hover:bg-red-900 text-white px-6 py-3 rounded-full"
                       onClick={() => setSelectedNGO(ngosData[currentNGOIndex])}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Ver Detalles
                     </Button>
                     <Button 
-                      className="border border-red-300 text-red-600 hover:bg-red-50 px-6 py-3 rounded-full"
+                      className="border border-red-950 text-red-950 hover:bg-red-950/10 px-6 py-3 rounded-full"
                       onClick={() => window.open(ngosData[currentNGOIndex].website, '_blank')}
                     >
                       <Globe className="w-4 h-4 mr-2" />
@@ -1329,14 +1329,10 @@ calidad de vida.
               onClick={() => setIsDonationModalOpen(true)}
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 text-lg rounded-full shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
             >
-              💝 Donar Ahora
+              Donar Ahora
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Link to="/ngo/projects">
-              <Button className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 text-lg rounded-full transition-all duration-300 hover:scale-105">
-                Ver Proyectos
-              </Button>
-            </Link>
+
           </div>
 
           {/* ODS compactas */}

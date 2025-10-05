@@ -11,7 +11,11 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminNGOs from "./pages/admin/NGOs";
 import AdminProjects from "./pages/admin/Projects";
 import UsersIndex from "./pages/users/Index";
+<<<<<<< Updated upstream
 import Login from "./pages/Login";
+=======
+import ChatbotFloating from "@/components/ChatbotFloating";
+>>>>>>> Stashed changes
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatbotFloating />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

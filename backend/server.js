@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+dotenv.config();
 
 // Importar rutas
 const tipoUsuarioRoutes = require("./routes/tipoUsuario.route");
@@ -20,7 +21,6 @@ const itemObservableRoutes = require("./routes/itemObservable.routes");
 //graficos
 const graficoKpiRoutes = require("./routes/graficos/graficoKpi.route");
 const openaiRoutes = require("./routes/openai.routes");
-dotenv.config();
 
 const app = express();
 
@@ -60,7 +60,13 @@ app.use("/api/tipo-dato-item", tipoDatoItemRoutes);
 app.use("/api/item", itemRoutes);
 app.use("/api/item-observable", itemObservableRoutes);
 app.use("/api/grafico-kpi", graficoKpiRoutes);
-app.use("/api/openai", openaiRoutes);
+if (process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY) {
+  app.use("/api/openai", openaiRoutes);
+} else {
+  console.warn(
+    "[backend] OpenAI deshabilitado: defina OPENAI_API_KEY en backend/.env si desea usar /api/openai"
+  );
+}
 
 app.get("/", (req, res) => {
   res.send("Servidor funcionando correctamente");

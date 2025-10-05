@@ -28,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -95,6 +94,9 @@ const AdminProjects = () => {
   };
   // Usar el store centralizado
   const [projects, setProjects] = useState<Project[]>(projectStore.getProjects());
+  // Flujo: aprobación -> pago -> histórico
+  const [pendingApprovals, setPendingApprovals] = useState<Project[]>(projectStore.getProjects());
+  const [pendingPayments, setPendingPayments] = useState<Project[]>([]);
 
   // Sincronizar con el store cuando cambien los proyectos
   useEffect(() => {
@@ -108,46 +110,43 @@ const AdminProjects = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"projects" | "pending" | "history">("projects");
-  const [pendingApprovals, setPendingApprovals] = useState<Project[]>([]);
-  const [historyProjects, setHistoryProjects] = useState<Project[]>([]);
+  const [historyProjects, setHistoryProjects] = useState<Project[]>([
+    {
+      id: "paid-100",
+      name: "Programa de Salud Comunitaria",
+      description: "Proyecto ya cancelado que fortaleció la atención primaria en barrios vulnerables.",
+      duration: "12",
+      reportingPeriod: "Mensual",
+      ong: "Fund Amiga",
+      subscriptionDate: "2024-03-10",
+      ejes: [
+        { name: "Salud", indicators: [ { id: "a1", name: "Consultas realizadas", dataType: "#" } ] },
+        { name: "Educación", indicators: [ { id: "a2", name: "Charlas impartidas", dataType: "#" } ] },
+      ],
+    },
+  ]);
+  const [payProject, setPayProject] = useState<Project | null>(null);
+  const [approvalCheck, setApprovalCheck] = useState<{[projectId: string]: boolean}>({});
 
-  // Simular avance y mover a Pendientes cuando llega a 100
-  const incrementProgress = (id: string, delta = 10) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id !== id) return p;
-      const next = Math.min(100, (p.progress || 0) + delta);
-      return { ...p, progress: next };
-    }));
+  // Aprobar proyecto: pasa de aprobación a pendientes de pago
+  const approveProject = (project: Project) => {
+    setPendingApprovals(prev => prev.filter(p => p.id !== project.id));
+    setPendingPayments(prev => [...prev, project]);
+    setViewProject(null);
+    setApprovalCheck(prev => ({ ...prev, [project.id]: false }));
+    toast({ title: "Proyecto aprobado", description: project.name });
   };
 
-  // Semilla de ejemplos: mueve proyectos >=100% a Pendientes (solo al montar si no hay pendientes)
-  useEffect(() => {
-    if (pendingApprovals.length === 0) {
-      const completed = projects.filter(p => (p.progress || 0) >= 100);
-      if (completed.length > 0) {
-        setPendingApprovals(completed);
-        setProjects(prev => prev.filter(p => (p.progress || 0) < 100));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const approveProject = (id: string) => {
-    const proj = pendingApprovals.find(p => p.id === id);
-    if (!proj) return;
-    setPendingApprovals(prev => prev.filter(p => p.id !== id));
-    // Regresa a activos para pagos manteniendo 100%
-    setProjects(prev => [...prev, { ...proj }]);
-    toast({ title: "Proyecto aprobado", description: proj.name });
+  // Pago desde Pendientes de pago -> pasa a Histórico
+  const payPendingProject = (project: Project) => {
+    setPayProject(project);
   };
 
-  const rejectProject = (id: string) => {
-    const proj = pendingApprovals.find(p => p.id === id);
-    if (!proj) return;
-    setPendingApprovals(prev => prev.filter(p => p.id !== id));
-    // Enviar a histórico como rechazado (simple)
-    setHistoryProjects(prev => [...prev, proj]);
-    toast({ title: "Proyecto rechazado", description: proj.name });
+  const finalizePayment = (project: Project) => {
+    setPendingPayments(prev => prev.filter(p => p.id !== project.id));
+    setHistoryProjects(prev => [...prev, project]);
+    setPayProject(null);
+    toast({ title: "Pago completado", description: project.name });
   };
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewProject, setViewProject] = useState<Project | null>(null);
@@ -181,7 +180,7 @@ const AdminProjects = () => {
 
   const ejeOptions = [
     { name: "Nutrición", color: "bg-orange-500" },
-    { name: "Educación", color: "bg-red-500" },
+    { name: "Educación", color: "bg-red-900" },
     { name: "Emprendimiento", color: "bg-amber-500" },
     { name: "Medio Ambiente", color: "bg-green-600" },
     { name: "Equidad de Género", color: "bg-pink-500" },
@@ -203,7 +202,7 @@ const AdminProjects = () => {
 
   // Filtrado de proyectos
   const getFilteredProjects = () => {
-    return projects.filter((project) => {
+    return pendingApprovals.filter((project) => {
       const matchesSearch =
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.ong.toLowerCase().includes(searchTerm.toLowerCase());
@@ -394,7 +393,7 @@ const AdminProjects = () => {
       ong: formData.ong,
       subscriptionDate: new Date().toISOString().split("T")[0],
       ejes: formData.ejesWithIndicators,
-      progress: 0,
+      // El flujo de aprobación ya no depende del progreso
     };
 
     projectStore.addProject(newProject);
@@ -736,8 +735,8 @@ const AdminProjects = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
           <TabsList>
-            <TabsTrigger value="projects">Proyectos</TabsTrigger>
-            <TabsTrigger value="pending">Pendientes de Aprobar</TabsTrigger>
+            <TabsTrigger value="projects">Pendientes de aprobación</TabsTrigger>
+            <TabsTrigger value="pending">Pendientes de pago</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
 
@@ -915,7 +914,7 @@ const AdminProjects = () => {
                 <TableHead>Fecha de Suscripción</TableHead>
                 <TableHead>Período de Reporte</TableHead>
                 <TableHead>Ejes</TableHead>
-                <TableHead>Progreso</TableHead>
+                {/* Sin progreso */}
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -938,94 +937,30 @@ const AdminProjects = () => {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="w-48">
-                    <div className="flex items-center gap-2">
-                      <Progress value={project.progress || 0} className="h-2 w-full" />
-                      <span className="text-xs w-8 text-right">{project.progress || 0}%</span>
-                    </div>
-                  </TableCell>
+                  {/* Sin progreso */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="text-red-900 hover:bg-red-900/10"
                         onClick={() => setViewProject(project)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="text-red-900 hover:bg-red-900/10">
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="text-red-900 hover:bg-red-900/10"
                         onClick={() => setDeleteId(project.id)}
                       >
-                        <Trash2 className="w-4 h-4 text-destructive" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                      {/* Pago Plux inline (monto 5.00 por defecto) */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button className="border" disabled={(project.progress || 0) < 100} title={(project.progress || 0) < 100 ? "Disponible al 100%" : "Pagar"}>Pagar</Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md md:max-w-lg h-[90vh] overflow-y-auto p-0">
-                          {/* Cabecera decorativa */}
-                          <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-5">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="text-xl font-bold">{project.name}</h3>
-                                <p className="text-white/80 text-sm">ONG: {project.ong}</p>
-                              </div>
-                              <div className="text-right text-white/90">
-                                <div className="text-sm">Duración: <span className="font-semibold">{project.duration} meses</span></div>
-                                <div className="text-sm">Reporte: <span className="font-semibold">{project.reportingPeriod}</span></div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Contenido */}
-                          <div className="p-6 space-y-6">
-                            {/* Info del proyecto */}
-                            <div className="space-y-4">
-                              <div className="bg-muted/30 border rounded-lg p-4">
-                                <h4 className="text-sm font-semibold mb-2">Descripción</h4>
-                                <p className="text-sm text-muted-foreground">Aporte administrativo para el procesamiento del pago vinculado al proyecto seleccionado. Este aporte ayuda a sostener la plataforma y la trazabilidad de los pagos.</p>
-                              </div>
-                              <div className="grid grid-cols-3 gap-3 text-center">
-                                <div className="bg-white border rounded-lg p-3">
-                                  <div className="text-xs text-muted-foreground">Estatus</div>
-                                  <div className="text-base font-semibold">Activo</div>
-                                </div>
-                                <div className="bg-white border rounded-lg p-3">
-                                  <div className="text-xs text-muted-foreground">ONG</div>
-                                  <div className="text-base font-semibold">{project.ong}</div>
-                                </div>
-                                <div className="bg-white border rounded-lg p-3">
-                                  <div className="text-xs text-muted-foreground">Período</div>
-                                  <div className="text-base font-semibold">{project.reportingPeriod}</div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Pago */}
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Monto (USD)</Label>
-                                <Input defaultValue="5.00" id={`pay-amount-${project.id}`} type="number" min="1" step="0.01" />
-                              </div>
-                              <div className="bg-white border rounded-lg p-4 text-center">
-                                <div className="text-sm text-muted-foreground mb-2">Método: Plux Paybox (Sandbox)</div>
-                                <PpxButtonGlobalSimple
-                                  data={createPluxData(project.name, 5)}
-                                  onSuccess={handlePaySuccess}
-                                  onError={handlePayError}
-                                />
-                                <div className="text-[11px] text-muted-foreground mt-3">Tarjetas de prueba: VISA 4540639936908783 · CVV 123</div>
-                              </div>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      {/* Aprobar (deshabilitado hasta confirmar en modal) */}
+                      <Button className="border" disabled={!approvalCheck[project.id]} onClick={() => approveProject(project)}>Aprobar</Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -1049,7 +984,6 @@ const AdminProjects = () => {
                       <TableHead>Proyecto</TableHead>
                       <TableHead>ONG</TableHead>
                       <TableHead>Fecha</TableHead>
-                      <TableHead>Progreso</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1059,11 +993,12 @@ const AdminProjects = () => {
                         <TableCell className="font-medium">{p.name}</TableCell>
                         <TableCell>{p.ong}</TableCell>
                         <TableCell>{p.subscriptionDate}</TableCell>
-                        <TableCell className="w-40"><Progress value={p.progress || 100} className="h-2" /></TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button className="p-2" onClick={() => approveProject(p.id)}>Aprobar</Button>
-                            <Button className="p-2 border" variant="outline" onClick={() => rejectProject(p.id)}>Rechazar</Button>
+                      <Button variant="ghost" size="icon" onClick={() => setViewProject(p)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button className="bg-red-900 hover:bg-red-950 text-white" onClick={() => payPendingProject(p)}>Pagar</Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1089,6 +1024,7 @@ const AdminProjects = () => {
                       <TableHead>ONG</TableHead>
                       <TableHead>Duración</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1097,7 +1033,14 @@ const AdminProjects = () => {
                         <TableCell className="font-medium">{p.name}</TableCell>
                         <TableCell>{p.ong}</TableCell>
                         <TableCell>{p.duration} meses</TableCell>
-                        <TableCell><Badge variant="secondary">Finalizado</Badge></TableCell>
+                        <TableCell>
+                          <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">Pagado</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => setViewProject(p)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1108,15 +1051,24 @@ const AdminProjects = () => {
         </Tabs>
       </div>
 
-      {/* Modal Ver Proyecto */}
+      {/* Modal Ver/Aprobar Proyecto */}
       <Dialog open={!!viewProject} onOpenChange={() => setViewProject(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {viewProject && (
             <>
               {/* Sticky Header */}
-              <DialogHeader className="sticky top-0 bg-background z-10 pb-4 border-b">
-                <DialogTitle className="text-2xl">{viewProject.name}</DialogTitle>
-                <p className="text-muted-foreground">{viewProject.description}</p>
+              <DialogHeader className="sticky top-0 z-10 p-0">
+                <div className="bg-gradient-to-r from-primary to-primary/80 text-white px-6 py-5 rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <DialogTitle className="text-2xl text-white">{viewProject.name}</DialogTitle>
+                      <p className="text-white/80 text-sm max-w-2xl mt-1">{viewProject.description}</p>
+                    </div>
+                    <Badge className={activeTab === "projects" ? "bg-amber-500" : activeTab === "pending" ? "bg-cyan-600" : "bg-emerald-600"}>
+                      {activeTab === "projects" ? "Pendiente de aprobación" : activeTab === "pending" ? "Pendiente de pago" : "Pagado"}
+                    </Badge>
+                  </div>
+                </div>
               </DialogHeader>
 
               <div className="space-y-6 py-6">
@@ -1130,7 +1082,7 @@ const AdminProjects = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-2xl font-bold">{viewProject.ong}</p>
+                      <p className="text-2xl font-bold tracking-tight">{viewProject.ong}</p>
                     </CardContent>
                   </Card>
 
@@ -1228,13 +1180,66 @@ const AdminProjects = () => {
                 </Card>
               </div>
 
-              {/* Sticky Footer */}
-              <DialogFooter className="sticky bottom-0 bg-background border-t pt-4">
-                <Button variant="outline" onClick={() => setViewProject(null)}>
-                  Cerrar
-                </Button>
-              </DialogFooter>
+              {/* Footer condicional: en aprobación muestra checkbox+aprobar; en pago solo cerrar */}
+              {activeTab === "projects" ? (
+                <>
+                  <div className="flex items-center gap-2 py-2">
+                    <Checkbox
+                      checked={!!approvalCheck[viewProject.id]}
+                      onCheckedChange={(v) => setApprovalCheck(prev => ({ ...prev, [viewProject.id]: !!v }))}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Confirmo que toda la información es correcta
+                    </span>
+                  </div>
+                  <DialogFooter className="sticky bottom-0 bg-background border-t pt-4">
+                    <Button variant="outline" className="border-red-950 text-red-950 hover:bg-red-950/10" onClick={() => setViewProject(null)}>Cerrar</Button>
+                    <Button onClick={() => approveProject(viewProject)} disabled={!approvalCheck[viewProject.id]} className="bg-red-950 hover:bg-red-900 text-white disabled:opacity-50">Aprobar</Button>
+                  </DialogFooter>
+                </>
+              ) : (
+                <DialogFooter className="sticky bottom-0 bg-background border-t pt-4">
+                  <Button variant="outline" className="border-red-950 text-red-950 hover:bg-red-950/10" onClick={() => setViewProject(null)}>Cerrar</Button>
+                </DialogFooter>
+              )}
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pago desde Pendientes */}
+      <Dialog open={!!payProject} onOpenChange={() => setPayProject(null)}>
+        <DialogContent className="max-w-md md:max-w-lg h-[90vh] overflow-y-auto p-0">
+          {payProject && (
+            <div>
+              <div className="bg-gradient-to-r from-red-900 to-red-950 text-white px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">{payProject.name}</h3>
+                    <p className="text-white/80 text-sm">ONG: {payProject.ong}</p>
+                  </div>
+                    <div className="text-right text-white/90">
+                    <div className="text-sm">Duración: <span className="font-semibold">{payProject.duration} meses</span></div>
+                    <div className="text-sm">Reporte: <span className="font-semibold">{payProject.reportingPeriod}</span></div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Monto (USD)</Label>
+                  <Input defaultValue="5.00" type="number" min="1" step="0.01" className="focus-visible:ring-red-950/30" />
+                </div>
+                <div className="bg-white border rounded-lg p-4 text-center">
+                  <div className="text-sm text-red-950 mb-2">Método: Plux Paybox (Sandbox)</div>
+                  <PpxButtonGlobalSimple
+                    data={createPluxData(payProject.name, 5)}
+                    onSuccess={() => finalizePayment(payProject)}
+                    onError={handlePayError}
+                  />
+                  <div className="text-[11px] text-muted-foreground mt-3">Tarjetas de prueba: VISA 4540639936908783 · CVV 123</div>
+                </div>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

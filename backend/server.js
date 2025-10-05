@@ -19,7 +19,7 @@ const itemObservableRoutes = require("./routes/itemObservable.routes");
 
 //graficos
 const graficoKpiRoutes = require("./routes/graficos/graficoKpi.route");
-
+const openaiRoutes = require("./routes/openai.routes");
 dotenv.config();
 
 const app = express();
@@ -60,6 +60,7 @@ app.use("/api/tipo-dato-item", tipoDatoItemRoutes);
 app.use("/api/item", itemRoutes);
 app.use("/api/item-observable", itemObservableRoutes);
 app.use("/api/grafico-kpi", graficoKpiRoutes);
+app.use("/api/openai", openaiRoutes);
 
 app.get("/", (req, res) => {
   res.send("Servidor funcionando correctamente");

@@ -1,6 +1,7 @@
 import PageLayout from "@/components/layout/PageLayout";
 import { BarChartComponent } from "@/components/ui/bar-chart-component";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DownloadButtons } from "@/components/ui/DownloadButtons";
 import { Label } from "@/components/ui/label";
 import { LineChartComponent } from "@/components/ui/line-chart-component";
 import { MultiLineChart } from "@/components/ui/multi-line-chart";
@@ -14,10 +15,10 @@ import {
 } from "@/components/ui/select";
 import { TimeFilter } from "@/components/ui/time-filter";
 import { apiService } from "@/services/api";
-import { FolderOpen, Target, TrendingUp, Users } from "lucide-react";
-import { useEffect, useState } from "react";
 import { GridStack } from 'gridstack';
 import 'gridstack/dist/gridstack.min.css';
+import { FolderOpen, Target, TrendingUp, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 const MONTHS = [
   { id: "1", name: "Enero" },
@@ -372,17 +373,53 @@ const AdminDashboard = () => {
     color: ["#0088FE", "#00C49F", "#FFBB28"][index % 3],
   }));
 
+  // Preparar datos para el reporte
+  const reportData = useMemo(() => {
+    if (!selectedNGO || !selectedProject) return null;
+
+    const selectedNGOData = ngos.find(n => n.id.toString() === selectedNGO);
+    const selectedProjectData = projects.find(p => p.id.toString() === selectedProject);
+
+    return {
+      ngoName: selectedNGOData?.nombre || '',
+      projectName: selectedProjectData?.nombre || '',
+      filters: {
+        month: selectedMonth,
+        year: selectedYear
+      },
+      kpis,
+      items,
+      ejes,
+      chartData: {
+        lineChart: processLineChartData(),
+        multiLineChart: processMultiLineData(),
+        barChart: processBarChartData(),
+        pieChart: processPieChartData()
+      }
+    };
+  }, [selectedNGO, selectedProject, selectedMonth, selectedYear, ngos, projects, kpis, items, ejes]);
+
   return (
     <PageLayout role="admin">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Monitoree y analice el desempeño de las ONGs y las métricas de los
-            proyectos
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Monitoree y analice el desempeño de las ONGs y las métricas de los
+              proyectos
+            </p>
+          </div>
+
+          {/* Botones de descarga */}
+          {selectedNGO && selectedProject && reportData && (
+            <DownloadButtons 
+              reportData={reportData}
+              disabled={loading}
+            />
+          )}
         </div>
 
         {/* Filters Section */}

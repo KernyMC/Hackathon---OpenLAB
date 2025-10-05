@@ -65,4 +65,23 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Obtener proyectos por ID de ONG
+router.get("/proyecto/ong/:idOng", async (req, res) => {
+  try {
+    const { idOng } = req.params;
+    const proyectos = await prisma.proyecto.findMany({
+      where: {
+        idOng: parseInt(idOng),
+      },
+      include: {
+        ong: true,
+      },
+    });
+    res.json(proyectos);
+  } catch (error) {
+    console.error("Error fetching projects by ONG:", error);
+    res.status(500).json({ error: "Error al obtener proyectos" });
+  }
+});
+
 module.exports = router;

@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const itemService = require("../services/item.service");
+const prisma = require("../lib/prisma");
 
 // GET todos los items
 router.get("/", async (req, res) => {

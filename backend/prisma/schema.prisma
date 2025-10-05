@@ -67,7 +67,7 @@ model Proyecto {
 }
 
 model Eje {
-  id         Int      @id @default(autoincrement())
+  id         Int      @id @unique @default(autoincrement())
   nombre     String   @db.VarChar(150)
   idProyecto Int      @map("id_proyecto")
   proyecto   Proyecto @relation(fields: [idProyecto], references: [id])

@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "gridstack": "^12.3.3"
+    "openai": "^6.1.0",
+    "pdfjs-dist": "^5.4.296"
   }
 }

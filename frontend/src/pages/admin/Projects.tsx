@@ -64,32 +64,10 @@ import {
   FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-  import PpxButtonGlobalSimple from "@/components/payment/PpxButtonGlobalSimple";
+import PpxButtonGlobalSimple from "@/components/payment/PpxButtonGlobalSimple";
 import { data as pluxBaseData } from "@/configuration/ppx.global-simple";
-
-interface Indicator {
-  id: string;
-  name: string;
-  dataType: string;
-  isCustom?: boolean;
-}
-
-interface Eje {
-  name: string;
-  indicators: Indicator[];
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  reportingPeriod: string;
-  ong: string;
-  subscriptionDate: string;
-  ejes: Eje[];
-  progress?: number; // 0-100
-}
+import { Project, Indicator, Eje } from "@/types/project";
+import { projectStore } from "@/lib/projectStore";
 
 interface FormData {
   name: string;
@@ -115,53 +93,18 @@ const AdminProjects = () => {
   const handlePayError = (err: any) => {
     toast({ title: "Pago no completado", description: `${err?.message || "Inténtalo nuevamente"}` });
   };
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: "1",
-      name: "Iniciativa de Huertos Comunitarios",
-      description: "Proyecto enfocado en la creación de huertos urbanos comunitarios para mejorar la seguridad alimentaria.",
-      duration: "12",
-      reportingPeriod: "Mensual",
-      ong: "BAQ",
-      subscriptionDate: "2024-01-15",
-      ejes: [
-        {
-          name: "Nutrición",
-          indicators: [
-            { id: "1", name: "Número de beneficiarios", dataType: "#" },
-            { id: "2", name: "Kilos de alimentos producidos", dataType: "Kg" }
-          ]
-        },
-        {
-          name: "Medio Ambiente",
-          indicators: [
-            { id: "3", name: "Área cultivada", dataType: "#" },
-            { id: "4", name: "Reducción de CO2", dataType: "Kg" }
-          ]
-        }
-      ],
-      progress: 100
-    },
-    {
-      id: "2",
-      name: "Programa de Educación Juvenil",
-      description: "Programa de apoyo educativo y capacitación para jóvenes en situación de vulnerabilidad.",
-      duration: "18",
-      reportingPeriod: "Trimestral",
-      ong: "BAA Cuenca",
-      subscriptionDate: "2024-02-20",
-      ejes: [
-        {
-          name: "Educación",
-          indicators: [
-            { id: "5", name: "Estudiantes matriculados", dataType: "#" },
-            { id: "6", name: "Tasa de graduación", dataType: "%" }
-          ]
-        }
-      ],
-      progress: 60
-    },
-  ]);
+  // Usar el store centralizado
+  const [projects, setProjects] = useState<Project[]>(projectStore.getProjects());
+
+  // Sincronizar con el store cuando cambien los proyectos
+  useEffect(() => {
+    const syncProjects = () => {
+      setProjects(projectStore.getProjects());
+    };
+    // En producción, esto sería un listener/subscription al store
+    window.addEventListener('projectsUpdated', syncProjects);
+    return () => window.removeEventListener('projectsUpdated', syncProjects);
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"projects" | "pending" | "history">("projects");
@@ -295,7 +238,9 @@ const AdminProjects = () => {
   };
 
   const handleDelete = (id: string) => {
-    setProjects(projects.filter((p) => p.id !== id));
+    projectStore.deleteProject(id);
+    setProjects(projectStore.getProjects());
+    window.dispatchEvent(new Event('projectsUpdated'));
     setDeleteId(null);
     toast({
       title: "Proyecto eliminado",
@@ -449,12 +394,15 @@ const AdminProjects = () => {
       ong: formData.ong,
       subscriptionDate: new Date().toISOString().split("T")[0],
       ejes: formData.ejesWithIndicators,
+      progress: 0,
     };
 
-    setProjects([...projects, newProject]);
+    projectStore.addProject(newProject);
+    setProjects(projectStore.getProjects());
+    window.dispatchEvent(new Event('projectsUpdated'));
     setIsCreateOpen(false);
     resetForm();
-    
+
     toast({
       title: "Proyecto creado",
       description: "El proyecto ha sido creado exitosamente.",

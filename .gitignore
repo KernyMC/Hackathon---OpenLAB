@@ -183,3 +183,7 @@ coverage/
 # Misc
 *.tgz
 *.tar.gz
+
+# Ignore Claude and Specify agent files generated locally
+.claude/
+.specify/

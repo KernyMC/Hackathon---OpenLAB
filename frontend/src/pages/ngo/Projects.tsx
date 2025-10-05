@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -41,89 +42,48 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Eye, Pencil, Trash2, Search, Upload, X, Calendar, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
-interface Project {
-  id: string;
-  name: string;
-  duration: string;
-  subscriptionDate: string;
-  reportingPeriod: string;
-  manager: string;
-  email: string;
-  eje: string;
-}
-
-interface ReportIndicator {
-  name: string;
-  value: string;
-  isCustom: boolean;
-}
-
-interface CalculatedField {
-  name: string;
-  value: string;
-}
-
-interface Report {
-  id: string;
-  projectId: string;
-  projectName: string;
-  month: string;
-  year: number;
-  eje: string;
-  indicators: ReportIndicator[];
-  calculatedFields?: CalculatedField[];
-  createdAt: string;
-  createdBy: string;
-  ongName: string;
-}
+import { Project, Report, Eje, Indicator } from "@/types/project";
+import { projectStore } from "@/lib/projectStore";
 
 const NGOProjects = () => {
   const { toast } = useToast();
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: "1",
-      name: "Iniciativa de Huertos Comunitarios",
-      duration: "12 meses",
-      subscriptionDate: "2024-01-15",
-      reportingPeriod: "Mensual",
-      manager: "María García",
-      email: "maria@example.com",
-      eje: "Medio Ambiente",
-    },
-    {
-      id: "2",
-      name: "Programa de Educación Juvenil",
-      duration: "18 meses",
-      subscriptionDate: "2024-02-20",
-      reportingPeriod: "Trimestral",
-      manager: "Juan Pérez",
-      email: "juan@example.com",
-      eje: "Educación",
-    },
-  ]);
+
+  // Datos simulados de la ONG actual (en producción vendría de autenticación)
+  const currentNGO = {
+    name: "BAA Cuenca",
+    responsable: "Juan Pérez",
+  };
+
+  // Obtener solo los proyectos de esta ONG
+  const [projects, setProjects] = useState<Project[]>(
+    projectStore.getProjectsByOng(currentNGO.name)
+  );
+
+  // Sincronizar cuando se actualicen los proyectos
+  useEffect(() => {
+    const syncProjects = () => {
+      setProjects(projectStore.getProjectsByOng(currentNGO.name));
+    };
+    window.addEventListener('projectsUpdated', syncProjects);
+    return () => window.removeEventListener('projectsUpdated', syncProjects);
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedEje, setSelectedEje] = useState<string>("");
+  const [selectedEjeData, setSelectedEjeData] = useState<Eje | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
 
   // Estado para reportes históricos
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[]>(
+    projectStore.getReportsByOng(currentNGO.name)
+  );
   const [isViewMode, setIsViewMode] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [activeTab, setActiveTab] = useState<"projects" | "history">("projects");
 
-  // Estado para almacenar el mes seleccionado por cada proyecto
-  const [projectMonths, setProjectMonths] = useState<Record<string, string>>({});
-
-  // Datos simulados de la ONG actual (vendrían de autenticación/base de datos)
-  const currentNGO = {
-    name: "BAQ",
-    responsable: "Carlos Rodríguez",
-  };
+  // Modal de confirmación antes de enviar
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Meses del año
   const months = [
@@ -131,104 +91,66 @@ const NGOProjects = () => {
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
 
-  // Estado para indicadores seleccionados y sus valores
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
+  // Estado para valores de indicadores (ya no se seleccionan, se cargan del proyecto)
   const [indicatorValues, setIndicatorValues] = useState<Record<string, string>>({});
-  const [customIndicators, setCustomIndicators] = useState<string[]>([]);
-  const [newIndicatorName, setNewIndicatorName] = useState("");
 
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.manager.toLowerCase().includes(searchTerm.toLowerCase())
+    (project.manager && project.manager.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Funciones helper para reportes
   const currentYear = new Date().getFullYear();
 
   const hasReportForMonth = (projectId: string, month: string): boolean => {
-    return reports.some(r =>
-      r.projectId === projectId &&
-      r.month === month &&
-      r.year === currentYear
-    );
+    return projectStore.hasReportForMonth(projectId, month, currentYear);
   };
 
   const findReport = (projectId: string, month: string): Report | undefined => {
-    return reports.find(r =>
-      r.projectId === projectId &&
-      r.month === month &&
-      r.year === currentYear
+    return projectStore.findReport(projectId, month, currentYear);
+  };
+
+  // Validar antes de mostrar el modal de confirmación
+  const handlePreSubmit = () => {
+    if (!selectedProject || !selectedEjeData) {
+      toast({
+        title: "Error",
+        description: "Datos del proyecto incompletos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar que todos los indicadores tengan valores
+    const missingValues = selectedEjeData.indicators.filter(
+      ind => !indicatorValues[ind.name] || indicatorValues[ind.name].trim() === ""
     );
-  };
 
-  const getProjectReports = (projectId: string): Report[] => {
-    return reports.filter(r => r.projectId === projectId);
-  };
-
-  const handleDelete = (id: string) => {
-    setProjects(projects.filter((p) => p.id !== id));
-    setDeleteId(null);
-    toast({
-      title: "Proyecto eliminado",
-      description: "El proyecto ha sido eliminado exitosamente.",
-    });
-  };
-
-  const handleOpenReportDialog = (project: Project) => {
-    const month = projectMonths[project.id];
-
-    if (!month) {
+    if (missingValues.length > 0) {
       toast({
-        title: "Mes no seleccionado",
-        description: "Por favor seleccione un mes antes de reportar.",
+        title: "Campos incompletos",
+        description: "Por favor complete todos los indicadores antes de enviar.",
         variant: "destructive",
       });
       return;
     }
 
-    setSelectedProject(project);
-    setSelectedMonth(month);
-    setSelectedEje(project.eje.toLowerCase());
-    setIsCreateOpen(true);
+    // Mostrar modal de confirmación
+    setShowConfirmDialog(true);
   };
 
-  const handleSubmitReport = () => {
-    if (!selectedProject) {
-      toast({
-        title: "Proyecto no seleccionado",
-        description: "Por favor seleccione un proyecto.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleConfirmSubmit = () => {
+    if (!selectedProject || !selectedEjeData) return;
 
-    if (!selectedEje) {
-      toast({
-        title: "Eje no seleccionado",
-        description: "Por favor seleccione un eje.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedIndicators.length === 0) {
-      toast({
-        title: "Sin indicadores",
-        description: "Por favor seleccione al menos un indicador.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Crear reporte
-    const reportIndicators: ReportIndicator[] = selectedIndicators.map(indicator => ({
-      name: indicator,
-      value: indicatorValues[indicator] || "0",
-      isCustom: customIndicators.includes(indicator),
+    // Crear reporte con los indicadores del proyecto
+    const reportIndicators = selectedEjeData.indicators.map(indicator => ({
+      name: indicator.name,
+      value: indicatorValues[indicator.name] || "0",
+      isCustom: indicator.isCustom || false,
     }));
 
-    const calculatedFields: CalculatedField[] = [];
-    if (selectedEje === "nutrition" && foodRecoveryPercentage) {
+    const calculatedFields: any[] = [];
+    if (selectedEje === "Nutrición" && foodRecoveryPercentage) {
       calculatedFields.push({
         name: "Recuperación de alimentos (%)",
         value: foodRecoveryPercentage,
@@ -247,31 +169,25 @@ const NGOProjects = () => {
       createdAt: new Date().toISOString(),
       createdBy: currentNGO.responsable,
       ongName: currentNGO.name,
+      isLocked: true, // El reporte queda bloqueado después de enviarse
     };
 
-    setReports([...reports, newReport]);
+    projectStore.addReport(newReport);
+    setReports(projectStore.getReportsByOng(currentNGO.name));
 
-    // Aquí se enviarían los datos al backend
-    console.log("Reporte guardado:", newReport);
-
+    setShowConfirmDialog(false);
     setIsCreateOpen(false);
     setSelectedProject(null);
     setSelectedMonth("");
     setSelectedEje("");
-    setSelectedIndicators([]);
+    setSelectedEjeData(null);
     setIndicatorValues({});
-    setCustomIndicators([]);
-    setNewIndicatorName("");
     setIsViewMode(false);
 
     toast({
       title: "Reporte enviado",
-      description: `El reporte de ${selectedMonth} ha sido guardado exitosamente.`,
+      description: `El reporte de ${selectedMonth} ha sido guardado exitosamente y no puede ser editado.`,
     });
-  };
-
-  const handleMonthChange = (projectId: string, month: string) => {
-    setProjectMonths(prev => ({ ...prev, [projectId]: month }));
   };
 
   const handleViewReport = (report: Report) => {
@@ -284,17 +200,16 @@ const NGOProjects = () => {
     setSelectedReport(report);
     setIsViewMode(true);
 
-    // Cargar indicadores del reporte
-    setSelectedIndicators(report.indicators.map(i => i.name));
+    // Cargar valores del reporte
     const values: Record<string, string> = {};
     report.indicators.forEach(i => {
       values[i.name] = i.value;
     });
     setIndicatorValues(values);
 
-    // Cargar indicadores custom
-    const customInds = report.indicators.filter(i => i.isCustom).map(i => i.name);
-    setCustomIndicators(customInds);
+    // Encontrar el eje correspondiente
+    const ejeData = project.ejes.find(e => e.name === report.eje);
+    setSelectedEjeData(ejeData || null);
 
     setIsCreateOpen(true);
   };
@@ -306,43 +221,26 @@ const NGOProjects = () => {
       // Ya existe reporte - abrir en modo vista
       handleViewReport(report);
     } else {
-      // No existe reporte - abrir para crear
+      // No existe reporte - seleccionar primer eje para crear
+      if (project.ejes.length === 0) {
+        toast({
+          title: "Sin ejes configurados",
+          description: "Este proyecto no tiene ejes configurados por el administrador.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Usar el primer eje del proyecto
+      const firstEje = project.ejes[0];
       setSelectedProject(project);
       setSelectedMonth(month);
-      setSelectedEje(project.eje.toLowerCase());
+      setSelectedEje(firstEje.name);
+      setSelectedEjeData(firstEje);
+      setIndicatorValues({});
       setIsViewMode(false);
       setIsCreateOpen(true);
     }
-  };
-
-  // Función para agregar indicadores personalizados
-  const handleAddCustomIndicator = () => {
-    if (newIndicatorName.trim()) {
-      setCustomIndicators([...customIndicators, newIndicatorName.trim()]);
-      setNewIndicatorName("");
-      toast({
-        title: "Indicador agregado",
-        description: "El indicador personalizado ha sido agregado exitosamente.",
-      });
-    }
-  };
-
-  // Función para eliminar indicadores personalizados
-  const handleRemoveCustomIndicator = (indicator: string) => {
-    setCustomIndicators(customIndicators.filter(i => i !== indicator));
-    setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
-    const newValues = { ...indicatorValues };
-    delete newValues[indicator];
-    setIndicatorValues(newValues);
-  };
-
-  // Función para alternar selección de indicador
-  const toggleIndicator = (indicator: string) => {
-    setSelectedIndicators(prev =>
-      prev.includes(indicator)
-        ? prev.filter(i => i !== indicator)
-        : [...prev, indicator]
-    );
   };
 
   // Función para actualizar valor de indicador
@@ -350,46 +248,9 @@ const NGOProjects = () => {
     setIndicatorValues(prev => ({ ...prev, [indicator]: value }));
   };
 
-  // Definir indicadores predeterminados por eje (en producción vendrían del admin/BD)
-  const indicatorsByEje: Record<string, string[]> = {
-    nutrition: [
-      "Alimentos aptos para consumo (Kg)",
-      "Alimentos de consumo inmediato (Kg)",
-      "Producción (Kg)",
-      "Total de kilos recibidos en el mes",
-      "Instituciones beneficiadas (#)",
-      "Personas alimentadas mensualmente (#)",
-      "Personas que laboran en la fundación (#)",
-    ],
-    education: [
-      "Número de estudiantes",
-      "Número de profesores",
-      "Número de aulas",
-      "Materiales educativos distribuidos",
-    ],
-    entrepreneurship: [
-      "Negocios apoyados",
-      "Empleos creados",
-      "Sesiones de capacitación realizadas",
-      "Ingresos generados ($)",
-    ],
-    environment: [
-      "Árboles plantados",
-      "Residuos recolectados (Kg)",
-      "Área restaurada (m²)",
-      "Número de voluntarios",
-    ],
-    gender: [
-      "Mujeres apoyadas",
-      "Talleres realizados",
-      "Campañas de concientización",
-      "Total de participantes",
-    ],
-  };
-
   // Cálculo automático de recuperación de alimentos (solo para Nutrición)
   const foodRecoveryPercentage = useMemo(() => {
-    if (selectedEje !== "nutrition") return null;
+    if (selectedEje !== "Nutrición") return null;
 
     const a = parseFloat(indicatorValues["Alimentos aptos para consumo (Kg)"] || "0");
     const b = parseFloat(indicatorValues["Alimentos de consumo inmediato (Kg)"] || "0");
@@ -403,121 +264,46 @@ const NGOProjects = () => {
   }, [selectedEje, indicatorValues]);
 
   const renderIndicators = () => {
-    if (!selectedEje) return null;
-
-    const predefinedIndicators = indicatorsByEje[selectedEje] || [];
-    const allIndicators = [...predefinedIndicators, ...customIndicators];
+    if (!selectedEjeData) return null;
 
     return (
       <div className="space-y-6">
-        {/* Sección de selección de indicadores */}
-        <div className="border rounded-lg p-4 bg-muted/30">
+        {/* Indicadores del proyecto (definidos por el Admin) */}
+        <div className="border rounded-lg p-4">
           <Label className="text-base font-semibold mb-3 block">
-            Seleccionar Indicadores (puede seleccionar múltiples)
+            Indicadores del Proyecto
+            <span className="text-xs text-muted-foreground ml-2">(Configurados por el Administrador)</span>
           </Label>
-          <div className="space-y-3">
-            {predefinedIndicators.map((indicator) => (
-              <div key={indicator} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`indicator-${indicator}`}
-                  checked={selectedIndicators.includes(indicator)}
-                  onCheckedChange={() => toggleIndicator(indicator)}
-                  disabled={isViewMode}
-                />
-                <Label
-                  htmlFor={`indicator-${indicator}`}
-                  className="font-normal cursor-pointer flex-1"
-                >
-                  {indicator}
+          <div className="grid grid-cols-2 gap-4">
+            {selectedEjeData.indicators.map((indicator) => (
+              <div key={indicator.id}>
+                <Label htmlFor={`value-${indicator.id}`} className="text-sm flex items-center gap-2">
+                  {indicator.name}
+                  <Badge variant="outline" className="text-[10px] px-1 py-0">
+                    {indicator.dataType}
+                  </Badge>
+                  {indicator.isCustom && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                      Personalizado
+                    </Badge>
+                  )}
                 </Label>
-              </div>
-            ))}
-
-            {/* Indicadores personalizados */}
-            {customIndicators.map((indicator) => (
-              <div key={indicator} className="flex items-center space-x-2 bg-primary/5 p-2 rounded">
-                <Checkbox
-                  id={`indicator-${indicator}`}
-                  checked={selectedIndicators.includes(indicator)}
-                  onCheckedChange={() => toggleIndicator(indicator)}
-                  disabled={isViewMode}
-                />
-                <Label
-                  htmlFor={`indicator-${indicator}`}
-                  className="font-normal cursor-pointer flex-1"
-                >
-                  {indicator} <span className="text-xs text-muted-foreground">(personalizado)</span>
-                </Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => handleRemoveCustomIndicator(indicator)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-
-            {/* Agregar indicador personalizado */}
-            {!isViewMode && (
-              <div className="flex gap-2 pt-2 border-t">
                 <Input
-                  placeholder="Agregar indicador personalizado..."
-                  value={newIndicatorName}
-                  onChange={(e) => setNewIndicatorName(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddCustomIndicator();
-                    }
-                  }}
+                  id={`value-${indicator.id}`}
+                  type="number"
+                  placeholder="0"
+                  value={indicatorValues[indicator.name] || ""}
+                  onChange={(e) => updateIndicatorValue(indicator.name, e.target.value)}
+                  disabled={isViewMode}
+                  className={isViewMode ? "bg-muted" : ""}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddCustomIndicator}
-                  disabled={!newIndicatorName.trim()}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
-        {/* Campos para ingresar valores de indicadores seleccionados */}
-        {selectedIndicators.length > 0 && (
-          <div className="border rounded-lg p-4">
-            <Label className="text-base font-semibold mb-3 block">
-              Valores de Indicadores
-            </Label>
-            <div className="grid grid-cols-2 gap-4">
-              {selectedIndicators.map((indicator) => (
-                <div key={indicator}>
-                  <Label htmlFor={`value-${indicator}`} className="text-sm">
-                    {indicator}
-                  </Label>
-                  <Input
-                    id={`value-${indicator}`}
-                    type="number"
-                    placeholder="0"
-                    value={indicatorValues[indicator] || ""}
-                    onChange={(e) => updateIndicatorValue(indicator, e.target.value)}
-                    disabled={isViewMode}
-                    className={isViewMode ? "bg-muted" : ""}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Campo calculado automático para Nutrición */}
-        {selectedEje === "nutrition" && foodRecoveryPercentage !== null && (
+        {selectedEje === "Nutrición" && foodRecoveryPercentage !== null && (
           <div className="border rounded-lg p-4 bg-primary/5">
             <Label className="text-base font-semibold mb-2 block">
               Cálculo Automático
@@ -549,19 +335,7 @@ const NGOProjects = () => {
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "projects" | "history")}>
-          <TabsList>
-            <TabsTrigger value="projects" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              Proyectos
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Histórico ({reports.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="projects" className="space-y-4">
+        <div className="space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
@@ -611,7 +385,7 @@ const NGOProjects = () => {
                 <div>
                   <Label htmlFor="eje">Eje del Proyecto</Label>
                   <Input
-                    value={selectedProject?.eje || ""}
+                    value={selectedEje || ""}
                     disabled
                     className="bg-muted"
                   />
@@ -631,7 +405,7 @@ const NGOProjects = () => {
                 <div className="flex gap-3 pt-4">
                   {!isViewMode ? (
                     <>
-                      <Button onClick={handleSubmitReport} className="flex-1">
+                      <Button onClick={handlePreSubmit} className="flex-1">
                         Enviar Reporte
                       </Button>
                       <Button
@@ -639,10 +413,8 @@ const NGOProjects = () => {
                         onClick={() => {
                           setIsCreateOpen(false);
                           setSelectedEje("");
-                          setSelectedIndicators([]);
+                          setSelectedEjeData(null);
                           setIndicatorValues({});
-                          setCustomIndicators([]);
-                          setNewIndicatorName("");
                           setIsViewMode(false);
                         }}
                         className="flex-1"
@@ -656,10 +428,8 @@ const NGOProjects = () => {
                       onClick={() => {
                         setIsCreateOpen(false);
                         setSelectedEje("");
-                        setSelectedIndicators([]);
+                        setSelectedEjeData(null);
                         setIndicatorValues({});
-                        setCustomIndicators([]);
-                        setNewIndicatorName("");
                         setIsViewMode(false);
                         setSelectedReport(null);
                       }}
@@ -677,11 +447,10 @@ const NGOProjects = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre del Proyecto</TableHead>
-                    <TableHead>Eje</TableHead>
-                    <TableHead>Gerente</TableHead>
-                    <TableHead className="w-[500px]">Meses (Click para reportar/ver)</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    <TableHead className="w-[250px]">Nombre del Proyecto</TableHead>
+                    <TableHead className="w-[120px]">Eje</TableHead>
+                    <TableHead className="w-[140px]">Gerente</TableHead>
+                    <TableHead className="min-w-[420px]">Meses (Click para reportar/ver)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -689,40 +458,36 @@ const NGOProjects = () => {
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">{project.name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{project.eje}</Badge>
-                      </TableCell>
-                      <TableCell>{project.manager}</TableCell>
-                      <TableCell>
                         <div className="flex gap-1 flex-wrap">
+                          {project.ejes.map((eje) => (
+                            <Badge key={eje.name} variant="outline">{eje.name}</Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>{project.manager || "—"}</TableCell>
+                      <TableCell>
+                        <div className="grid grid-cols-6 gap-1">
                           {months.map((month) => {
                             const hasReport = hasReportForMonth(project.id, month);
                             return (
-                              <Button
+                              <button
                                 key={month}
-                                size="sm"
-                                variant={hasReport ? "default" : "outline"}
                                 className={cn(
-                                  "h-7 px-2 text-xs",
-                                  hasReport && "bg-green-600 hover:bg-green-700 text-white"
+                                  "h-8 px-2 text-[11px] font-medium rounded border transition-all",
+                                  hasReport
+                                    ? "bg-green-50 border-green-500 text-green-700 hover:bg-green-100"
+                                    : "bg-white border-gray-200 text-gray-600 hover:border-primary hover:bg-primary/5"
                                 )}
                                 onClick={() => handleMonthBadgeClick(project, month)}
+                                title={hasReport ? `${month} - Reportado` : `${month} - Click para reportar`}
                               >
                                 {month.substring(0, 3)}
-                                {hasReport && " ✓"}
-                              </Button>
+                                {hasReport && (
+                                  <span className="ml-0.5 text-green-600">✓</span>
+                                )}
+                              </button>
                             );
                           })}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeleteId(project.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -730,90 +495,29 @@ const NGOProjects = () => {
                 </TableBody>
               </Table>
             </div>
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            {reports.length === 0 ? (
-              <div className="border rounded-lg bg-card p-12 text-center">
-                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay reportes</h3>
-                <p className="text-muted-foreground">
-                  Los reportes que envíes aparecerán aquí
-                </p>
-              </div>
-            ) : (
-              <div className="border rounded-lg bg-card">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Proyecto</TableHead>
-                      <TableHead>Mes/Año</TableHead>
-                      <TableHead>Eje</TableHead>
-                      <TableHead>Indicadores</TableHead>
-                      <TableHead>Fecha de Envío</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.projectName}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {report.month} {report.year}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{report.eje}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {report.indicators.length} indicador{report.indicators.length !== 1 && "es"}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(report.createdAt).toLocaleDateString("es-EC", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewReport(report)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Ver Detalle
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      {/* Modal de Confirmación antes de Enviar */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Está seguro de que desea eliminar este proyecto?</AlertDialogTitle>
+            <AlertDialogTitle>¿Está seguro de enviar este reporte?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el proyecto
-              y eliminará los datos de nuestros servidores.
+              Una vez enviado el reporte, <strong>no podrá editarlo ni modificarlo</strong>.
+              Por favor, verifique que todos los datos sean correctos antes de continuar.
+              <br /><br />
+              <strong>Proyecto:</strong> {selectedProject?.name}
+              <br />
+              <strong>Mes:</strong> {selectedMonth} {currentYear}
+              <br />
+              <strong>Eje:</strong> {selectedEje}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteId && handleDelete(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Eliminar
+            <AlertDialogCancel>Revisar nuevamente</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit}>
+              Sí, enviar reporte
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Building2, FolderOpen, LogIn, Users } from "lucide-react";
+import { BarChart3, Building2, FolderOpen, Users, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   role: "ngo" | "admin";
@@ -8,12 +9,11 @@ interface SidebarProps {
 
 const Sidebar = ({ role }: SidebarProps) => {
   const ngoLinks = [
-    { to: "/ngo/login", label: "Inicio de Sesión", icon: LogIn },
     { to: "/ngo/projects", label: "Proyectos", icon: FolderOpen },
   ];
 
   const adminLinks = [
-    { to: "/admin/dashboard", label: "Panel de Control", icon: LayoutDashboard },
+    { to: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
     { to: "/admin/ngos", label: "ONGs", icon: Building2 },
     { to: "/admin/projects", label: "Proyectos", icon: FolderOpen },
     { to: "/users", label: "Usuarios", icon: Users },
@@ -53,13 +53,22 @@ const Sidebar = ({ role }: SidebarProps) => {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
-          <NavLink
-            to="/"
-            className="flex items-center justify-center px-4 py-2 text-sm text-sidebar-foreground hover:text-sidebar-primary transition-colors"
-          >
-            Cambiar Rol
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          <div className="text-xs text-sidebar-foreground/60 text-center mb-2">
+            Modo de desarrollo
+          </div>
+          <NavLink to={role === "admin" ? "/ngo/projects" : "/admin/dashboard"} className="block">
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-sidebar-border hover:bg-sidebar-accent"
+            >
+              <UserCog className="w-4 h-4" />
+              {role === "admin" ? "Cambiar a ONG" : "Cambiar a Admin"}
+            </Button>
           </NavLink>
+          <div className="text-[10px] text-sidebar-foreground/40 text-center">
+            Usuario actual: {role === "admin" ? "Administrador" : "BAA Cuenca"}
+          </div>
         </div>
       </div>
     </aside>

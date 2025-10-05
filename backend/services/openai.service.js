@@ -47,7 +47,7 @@ El tono debe ser profesional, objetivo y orientado a la toma de decisiones.
 
       if (!openai) throw new Error("OpenAI no configurado");
       const completion = await openai.chat.completions.create({
-        model: "GPT-4o-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",

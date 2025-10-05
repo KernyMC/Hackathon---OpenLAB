@@ -34,9 +34,12 @@ import { useToast } from "@/hooks/use-toast";
 interface NGO {
   id: string;
   name: string;
-  manager: string;
+  manager: string; // representante
   email: string;
   phone: string;
+  ruc?: string;
+  website?: string;
+  address?: string;
 }
 
 const AdminNGOs = () => {
@@ -48,6 +51,9 @@ const AdminNGOs = () => {
       manager: "Carlos Rodríguez",
       email: "carlos@baq.org",
       phone: "+593-2-234-5678",
+      website: "https://baq.org",
+      ruc: "1790012345001",
+      address: "Quito"
     },
     {
       id: "2",
@@ -55,6 +61,9 @@ const AdminNGOs = () => {
       manager: "Ana Martínez",
       email: "ana@baacuenca.org",
       phone: "+593-7-234-5678",
+      website: "https://baacuenca.org",
+      ruc: "0190023456001",
+      address: "Cuenca"
     },
     {
       id: "3",
@@ -62,6 +71,9 @@ const AdminNGOs = () => {
       manager: "Luis Torres",
       email: "luis@baesmeraldas.org",
       phone: "+593-6-234-5678",
+      website: "https://baesmeraldas.org",
+      ruc: "0890034567001",
+      address: "Esmeraldas"
     },
   ]);
 
@@ -73,6 +85,9 @@ const AdminNGOs = () => {
     manager: "",
     email: "",
     phone: "",
+    ruc: "",
+    website: "",
+    address: "",
   });
 
   const filteredNGOs = ngos.filter(
@@ -117,7 +132,7 @@ const AdminNGOs = () => {
 
     setNgos([...ngos, newNGO]);
     setIsCreateOpen(false);
-    setFormData({ name: "", manager: "", email: "", phone: "" });
+    setFormData({ name: "", manager: "", email: "", phone: "", ruc: "", website: "", address: "" });
     
     toast({
       title: "ONG creada",
@@ -139,12 +154,12 @@ const AdminNGOs = () => {
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="w-4 h-4" />
-                Crear ONG
+                Añadir ONG
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Crear Nueva ONG</DialogTitle>
+                <DialogTitle>Nueva ONG</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div>
@@ -161,40 +176,57 @@ const AdminNGOs = () => {
 
                 <div>
                   <Label htmlFor="manager">
-                    Nombre del Gerente <span className="text-destructive">*</span>
+                    Representante <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="manager"
                     value={formData.manager}
                     onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                    placeholder="Ingrese el nombre del gerente"
+                    placeholder="Nombre del representante"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="email">
-                    Correo Electrónico <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="correo@ejemplo.com"
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="email">
+                      Correo Electrónico <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">
+                      Teléfono <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+593-2-234-5678"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="ruc">RUC</Label>
+                    <Input id="ruc" value={formData.ruc} onChange={(e) => setFormData({ ...formData, ruc: e.target.value })} placeholder="1790012345001" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="website">Sitio Web</Label>
+                    <Input id="website" value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} placeholder="https://sitio.org" />
+                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="phone">
-                    Teléfono <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+593-2-234-5678"
-                  />
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Ciudad, Calle y número" />
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -202,12 +234,11 @@ const AdminNGOs = () => {
                     Guardar ONG
                   </Button>
                   <Button
-                    variant="outline"
                     onClick={() => {
                       setIsCreateOpen(false);
-                      setFormData({ name: "", manager: "", email: "", phone: "" });
+                      setFormData({ name: "", manager: "", email: "", phone: "", ruc: "", website: "", address: "" });
                     }}
-                    className="flex-1"
+                    className="flex-1 border"
                   >
                     Cancelar
                   </Button>
@@ -227,14 +258,17 @@ const AdminNGOs = () => {
           />
         </div>
 
-        <div className="border rounded-lg bg-card">
+        <div className="border rounded-lg bg-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre de la ONG</TableHead>
-                <TableHead>Gerente</TableHead>
+                <TableHead>ONG</TableHead>
+                <TableHead>Representante</TableHead>
                 <TableHead>Correo</TableHead>
                 <TableHead>Teléfono</TableHead>
+                <TableHead>RUC</TableHead>
+                <TableHead>Sitio Web</TableHead>
+                <TableHead>Dirección</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -245,17 +279,21 @@ const AdminNGOs = () => {
                   <TableCell>{ngo.manager}</TableCell>
                   <TableCell>{ngo.email}</TableCell>
                   <TableCell>{ngo.phone}</TableCell>
+                  <TableCell>{ngo.ruc || '-'}</TableCell>
+                  <TableCell>
+                    {ngo.website ? (
+                      <a href={ngo.website} target="_blank" rel="noreferrer" className="text-sidebar-primary hover:underline">
+                        {ngo.website}
+                      </a>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>{ngo.address || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      <Button className="p-2"><Eye className="w-4 h-4" /></Button>
+                      <Button className="p-2"><Pencil className="w-4 h-4" /></Button>
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        className="p-2"
                         onClick={() => setDeleteId(ngo.id)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />

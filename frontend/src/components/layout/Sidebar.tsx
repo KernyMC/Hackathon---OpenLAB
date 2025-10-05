@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Building2, FolderOpen, LogIn } from "lucide-react";
+import { LayoutDashboard, Building2, FolderOpen, LogIn, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ const Sidebar = ({ role }: SidebarProps) => {
     { to: "/admin/dashboard", label: "Panel de Control", icon: LayoutDashboard },
     { to: "/admin/ngos", label: "ONGs", icon: Building2 },
     { to: "/admin/projects", label: "Proyectos", icon: FolderOpen },
+    { to: "/users", label: "Usuarios", icon: Users },
   ];
 
   const links = role === "ngo" ? ngoLinks : adminLinks;

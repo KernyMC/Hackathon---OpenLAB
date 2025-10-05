@@ -10,6 +10,7 @@ import NGOProjects from "./pages/ngo/Projects";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminNGOs from "./pages/admin/NGOs";
 import AdminProjects from "./pages/admin/Projects";
+import UsersIndex from "./pages/users/Index";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/ngos" element={<AdminNGOs />} />
           <Route path="/admin/projects" element={<AdminProjects />} />
+          <Route path="/users" element={<UsersIndex />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

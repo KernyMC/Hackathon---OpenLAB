@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminNGOs from "./pages/admin/NGOs";
 import AdminProjects from "./pages/admin/Projects";
 import UsersIndex from "./pages/users/Index";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+
           <Route path="/ngo/login" element={<NGOLogin />} />
           <Route path="/ngo/projects" element={<NGOProjects />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

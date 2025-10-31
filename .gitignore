@@ -187,3 +187,5 @@ coverage/
 # Ignore Claude and Specify agent files generated locally
 .claude/
 .specify/
+CLAUDE.md
+.qodo/

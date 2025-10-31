@@ -39,6 +39,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Plus, Eye, Pencil, Trash2, Search, Upload, X, Calendar, FileText, Info, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -531,12 +532,26 @@ const NGOProjects = () => {
                     <TableRow key={project.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">{project.name}</TableCell>
                       <TableCell>
-                        <div className="flex gap-1 flex-wrap">
-                          {project.ejes.map((eje) => (
-                            <Badge key={eje.name} variant="outline" className="rounded-full px-2">
-                              {eje.name}
-                            </Badge>
-                          ))}
+                        <div className="flex gap-1 flex-wrap max-w-[180px]">
+                          {project.ejes.map((eje) => {
+                            const color = "bg-red-900"; // O usa getEjeColor(eje.name) si tienes función
+                            const truncated = eje.name.length > 16 ? eje.name.slice(0, 13) + '…' : eje.name;
+                            return (
+                              <Tooltip key={eje.name}>
+                                <TooltipTrigger asChild>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${color} text-white max-w-[90px] truncate cursor-default`}
+                                    title={eje.name}
+                                  >
+                                    {truncated}
+                                  </span>
+                                </TooltipTrigger>
+                                {eje.name.length > 16 && (
+                                  <TooltipContent>{eje.name}</TooltipContent>
+                                )}
+                              </Tooltip>
+                            );
+                          })}
                         </div>
                       </TableCell>
                       <TableCell>{project.manager || "—"}</TableCell>

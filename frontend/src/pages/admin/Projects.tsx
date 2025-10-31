@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -67,6 +68,7 @@ import PpxButtonGlobalSimple from "@/components/payment/PpxButtonGlobalSimple";
 import { data as pluxBaseData } from "@/configuration/ppx.global-simple";
 import { Project, Indicator, Eje } from "@/types/project";
 import { projectStore } from "@/lib/projectStore";
+import ChatbotFloating from "@/components/ChatbotFloating";
 
 interface FormData {
   name: string;
@@ -927,37 +929,39 @@ const AdminProjects = () => {
                   <TableCell>{project.subscriptionDate}</TableCell>
                   <TableCell>{project.reportingPeriod}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {project.ejes.map((eje) => (
-                        <div
-                          key={eje.name}
-                          className={`w-3 h-3 rounded-full ${getEjeColor(eje.name)}`}
-                          title={eje.name}
-                        />
-                      ))}
+                    <div className="flex flex-wrap gap-1 max-w-[180px]">
+                      {project.ejes.map((eje) => {
+                        const color = getEjeColor(eje.name);
+                        const truncated = eje.name.length > 16 ? eje.name.slice(0, 13) + '…' : eje.name;
+                        return (
+                          <Tooltip key={eje.name}>
+                            <TooltipTrigger asChild>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${color} text-white max-w-[90px] truncate cursor-default`}
+                                title={eje.name}
+                              >
+                                {truncated}
+                              </span>
+                            </TooltipTrigger>
+                            {eje.name.length > 16 && (
+                              <TooltipContent>{eje.name}</TooltipContent>
+                            )}
+                          </Tooltip>
+                        );
+                      })}
                     </div>
                   </TableCell>
                   {/* Sin progreso */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-900 hover:bg-red-900/10"
-                        onClick={() => setViewProject(project)}
-                      >
+                      <Button variant="ghost" size="icon" className="text-gray-700 hover:bg-gray-100" onClick={() => setViewProject(project)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-red-900 hover:bg-red-900/10">
+                      <Button variant="ghost" size="icon" className="text-gray-700 hover:bg-gray-100">
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-900 hover:bg-red-900/10"
-                        onClick={() => setDeleteId(project.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
+                      <Button variant="ghost" size="icon" className="hover:bg-red-100" onClick={() => setDeleteId(project.id)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                       {/* Aprobar (deshabilitado hasta confirmar en modal) */}
                       <Button className="border" disabled={!approvalCheck[project.id]} onClick={() => approveProject(project)}>Aprobar</Button>
@@ -1265,6 +1269,8 @@ const AdminProjects = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ChatbotFloating />
     </PageLayout>
   );
 };

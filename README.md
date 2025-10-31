@@ -544,30 +544,6 @@ Este proyecto fue desarrollado por un equipo multidisciplinario durante el **Ope
 
 ---
 
-## 🤝 Contribución
-
-¡Las contribuciones son bienvenidas! Sigue estos pasos:
-
-### 1. Fork del Proyecto
-
-```bash
-git clone https://github.com/TU_USUARIO/Hackathon---OpenLAB.git
-cd Hackathon---OpenLAB
-```
-
-### 2. Crear Rama Feature
-
-```bash
-git checkout -b feature/nueva-funcionalidad
-```
-
-### 3. Hacer Cambios y Commit
-
-```bash
-git add .
-git commit -m "feat: agregar sistema de notificaciones por email"
-```
-
 **Convenciones de commits:**
 - `feat:` Nueva funcionalidad
 - `fix:` Corrección de bug

@@ -55,7 +55,7 @@ const NGOProjects = () => {
     responsable: "Juan Pérez",
   };
 
-  // Obtener solo los proyectos de esta ONG
+
   const [projects, setProjects] = useState<Project[]>(
     projectStore.getProjectsByOng(currentNGO.name)
   );
